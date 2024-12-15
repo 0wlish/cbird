@@ -1,6 +1,3 @@
-#note: virtualenv testing environment is cbirdtest
-#enter virtualenv with "source cbirdtest/bin/activate"
-
 import click
 
 @click.group()
@@ -8,5 +5,6 @@ def cli():
     pass
 
 @cli.command()
-def hello():
-    click.echo("Hello World")
+@click.option('-n', '--name', type=str, help='Name to greet', default='world')
+def hello(name):
+    click.echo(f'Hello {name}')

@@ -1,1 +1,3 @@
-cbirdtest/
+.venv/
+cbird.egg-info/
+__pycache__/
