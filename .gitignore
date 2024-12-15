@@ -1,3 +1,4 @@
 .venv/
 cbird.egg-info/
 __pycache__/
+/MyEBirdData.csv
