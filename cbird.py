@@ -41,7 +41,10 @@ def indexOf(array, element):
     return -1
 
 def byDate(data):
-    return data[11].replace("-", "")
+    if type(data[0]) == "str":
+        return data[11].replace("-", "")
+    else:
+        return data[0][11].replace("-", "")
 
 def byID(data):
     return data[0]
@@ -185,6 +188,8 @@ def checklist(filter, location, date, notes, sid, order):
             checklist.append(data)
             id = data[0]
     checklists.append(checklist)
+
+    checklists.sort(key = byDate, reverse = order)
     for checklist in checklists:
         str = 'Location: ' + checklist[0][8] + '\n'
         if location:
