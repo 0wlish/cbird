@@ -41,7 +41,7 @@ def indexOf(array, element):
     return -1
 
 def byDate(data):
-    if type(data[0]) == "str":
+    if str(type(data[0])) == "<class 'str'>":
         return data[11].replace("-", "")
     else:
         return data[0][11].replace("-", "")
@@ -75,11 +75,12 @@ def split(str): #splits a csv element by comma, but ignores commas in quotes
 #species
 @cli.command()
 @click.argument("species", type=str)
-@click.option("-l", "--location", is_flag = True)
-@click.option("-d", "--date", is_flag = True)
-@click.option("-n", "--notes", is_flag = True)
-@click.option("-s", "--sid", is_flag = True)
-def species(species, location, date, notes, sid):
+@click.option("-l", "--location", is_flag = True, help="Print full location info (state/province, county, latitude and longitude)")
+@click.option("-d", "--date", is_flag = True, help="Print time and duration, in addition to date")
+@click.option("-n", "--notes", is_flag = True, help="Print species notes and breeding codes")
+@click.option("-s", "--sid", is_flag = True, help="Print submission ID")
+def species(species, location, date, notes, sid): #add additional filters? (ex: by date or location)
+    """Prints location and date of a given species."""
     f = open("MyEBirdData.csv")
     found = False
     for line in f:
@@ -108,13 +109,14 @@ def species(species, location, date, notes, sid):
 
 #lifelist
 @cli.command()
-@click.option("-l", "--location", is_flag = True)
-@click.option("-d", "--date", is_flag = True)
-@click.option("-n", "--notes", is_flag = True)
-@click.option("-s", "--sid", is_flag = True)
-@click.option("-L", "--last", is_flag = True)
-@click.option("-o", "--order", is_flag = True)
+@click.option("-l", "--location", is_flag = True, help="Print full location info (state/province, county, latitude and longitude)")
+@click.option("-d", "--date", is_flag = True, help="Print time and duration, in addition to date")
+@click.option("-n", "--notes", is_flag = True, help="Print species notes and breeding codes")
+@click.option("-s", "--sid", is_flag = True, help="Print submission ID")
+@click.option("-L", "--last", is_flag = True, help="Sort by last seen")
+@click.option("-o", "--order", is_flag = True, help="Sort by newest sightings first")
 def lifelist(location, date, notes, sid, last, order):
+    """Prints life list sorted by date. Oldest sightings first, sorted by first seen"""
     f = open("MyEBirdData.csv")
     species = "Common Name"
     prevData = []
@@ -154,13 +156,17 @@ def lifelist(location, date, notes, sid, last, order):
 
 #checklist
 @cli.command()
-@click.option("-f", "--filter", type=str)
-@click.option("-l", "--location", is_flag = True)
-@click.option("-d", "--date", is_flag = True)
-@click.option("-n", "--notes", is_flag = True)
-@click.option("-s", "--sid", is_flag = True)
-@click.option("-o", "--order", is_flag = True)
+@click.option("-f", "--filter", type=str, help="Value to filter checklists by")
+@click.option("-l", "--location", is_flag = True, help="Print full location info (state/province, county, latitude and longitude)")
+@click.option("-d", "--date", is_flag = True, help="Print time and duration, in addition to date")
+@click.option("-n", "--notes", is_flag = True, help="Print species notes and breeding codes")
+@click.option("-s", "--sid", is_flag = True, help="Print submission ID")
+@click.option("-o", "--order", is_flag = True, help="Sort by newest checklists first")
 def checklist(filter, location, date, notes, sid, order):
+    """Print all checklists, or filter by location, species, ID, etc."""
+
+#NEEDS TO HANDLE A SPECIES NOT FOUND
+
     f = open("MyEBirdData.csv")
     list = [] #list of entries that meet filter criteria (all if no filter)
     checklists = [] #array of array of entries
@@ -169,45 +175,48 @@ def checklist(filter, location, date, notes, sid, order):
         data = split(line)
         if not(indexOf(data, filter) == -1): #if filter term exists in data
             ids.append(data[0])
-    f = open("MyEBirdData.csv")
-    for line in f:
-        data = split(line)
-        for id in ids:
+    if len(ids) > 0:
+        f = open("MyEBirdData.csv")
+        for line in f:
+            data = split(line)
+            for id in ids:
+                if data[0] == id:
+                    list.append(data)
+        list.sort(key = byID)
+
+        id = list[0][0]
+        checklist = []
+        for data in list:
             if data[0] == id:
-                list.append(data)
-    list.sort(key = byID)
-
-    id = list[0][0]
-    checklist = []
-    for data in list:
-        if data[0] == id:
-            checklist.append(data)
-        else:
-            checklists.append(checklist)
-            checklist = []
-            checklist.append(data)
-            id = data[0]
-    checklists.append(checklist)
-
-    checklists.sort(key = byDate, reverse = order)
-    for checklist in checklists:
-        str = 'Location: ' + checklist[0][8] + '\n'
-        if location:
-            str += 'State/Province: ' + checklist[0][5] + '\nCounty: ' + checklist[0][6] + '\nLatitude: ' + checklist[0][9] + '\nLongitude: ' + checklist[0][10] + '\n'
-        str += 'Date: ' + checklist[0][11] + '\nProtocol: ' + checklist[0][13] + '\n'
-        if date:
-            str += 'Time: ' + checklist[0][12] + '\nDuration: ' + checklist[0][14] + '\n'
-        if notes and len(checklist[0]) > 21:
-            str += 'Notes: ' + checklist[0][21] + '\n'
-        if sid:
-            str += 'Submission ID: ' + checklist[0][0] + '\n'
-        for data in checklist:
-            str += '\t' + data[4] + ' ' + data[1] + '\n'
-            if notes:
-                if len(data) > 20:
-                    str += 'Breeding code: ' + data[19] + '\nNotes: ' + data[20] + '\n'
-                elif len(data) > 19:
-                    str += 'Breeding code: ' + data[19] + '\nNotes:\n'
-                else:
-                    str += 'Breeding code:\nNotes:\n'
-        click.echo(str)
+                checklist.append(data)
+            else:
+                checklists.append(checklist)
+                checklist = []
+                checklist.append(data)
+                id = data[0]
+        checklists.append(checklist)
+        checklists.sort(key = byDate, reverse = order)
+        for checklist in checklists:
+            str = 'Location: ' + checklist[0][8] + '\n'
+            if location:
+                str += 'State/Province: ' + checklist[0][5] + '\nCounty: ' + checklist[0][6] + '\nLatitude: ' + checklist[0][9] + '\nLongitude: ' + checklist[0][10] + '\n'
+            str += 'Date: ' + checklist[0][11] + '\nProtocol: ' + checklist[0][13] + '\n'
+            if date:
+                str += 'Time: ' + checklist[0][12] + '\nDuration: ' + checklist[0][14] + '\n'
+            if notes and len(checklist[0]) > 21:
+                str += 'Notes: ' + checklist[0][21] + '\n'
+            if sid:
+                str += 'Submission ID: ' + checklist[0][0] + '\n'
+            for data in checklist:
+                str += '\t' + data[4] + ' ' + data[1] + '\n'
+                if notes:
+                    if len(data) > 20:
+                        str += 'Breeding code: ' + data[19] + '\nNotes: ' + data[20] + '\n'
+                    elif len(data) > 19:
+                        str += 'Breeding code: ' + data[19] + '\nNotes:\n'
+                    else:
+                        str += 'Breeding code:\nNotes:\n'
+            click.echo(str)
+    else:
+        click.echo("Nothing matches your filter.")
+    f.close()
