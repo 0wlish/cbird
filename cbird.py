@@ -97,7 +97,7 @@ def species(species, location, date, notes, sid): #add additional filters? (ex: 
         data = split(line)
         if data[1].lower() == species.lower():
             found = True
-            str = 'Species: ' + data[1] + '\nLocation: ' + data[8] + '\n'
+            str = data[1] + '\nLocation: ' + data[8] + '\n'
             if location:
                 str += 'State/Province: ' + data[5] + '\nCounty: ' + data[6] + '\nLatitude: ' + data[9] + '\nLongitude: ' + data[10] + '\n'
             str += 'Date: ' + data[11] + '\n'
@@ -125,28 +125,38 @@ def species(species, location, date, notes, sid): #add additional filters? (ex: 
 @click.option("-s", "--sid", is_flag = True, help="Print submission ID")
 @click.option("-L", "--last", is_flag = True, help="Sort by last seen")
 @click.option("-o", "--order", is_flag = True, help="Sort by newest sightings first")
-def lifelist(location, date, notes, sid, last, order):
+@click.option("-a", "--additional", is_flag = True, help="List additional taxa (spuhs and slashes) if present")
+def lifelist(location, date, notes, sid, last, order, additional):
     """Prints life list sorted by date. Oldest sightings first, sorted by first seen"""
     f = open("MyEBirdData.csv")
     species = "Common Name"
     prevData = []
     lifelist = []
+    additionals = [] #spuh/slash list
     for line in f:
         data = split(line)
         if last:
             if not(data[1] == species):
-                lifelist.append(data)
+                if data[1].find(".") == -1 and data[1].find("/") == -1: #if not spuh/slash
+                    lifelist.append(data)
+                else:
+                    if additional:
+                        additionals.append(data)
         else:
             if not(data[1] == species):
                 species = data[1]
                 if not(prevData[1] == "Common Name"):
-                    lifelist.append(prevData)
+                    if data[1].find(".") == -1 and data[1].find("/") == -1: #if not spuh/slash
+                        lifelist.append(data)
+                    else:
+                        if additional:
+                            additionals.append(data)
                 prevData = data
             else:
                 prevData = data
     lifelist.sort(key = byDate, reverse = order)
     for data in lifelist:
-        str = 'Species: ' + data[1] + '\nLocation: ' + data[8] + '\n'
+        str = data[1] + '\nLocation: ' + data[8] + '\n'
         if location:
             str += 'State/Province: ' + data[5] + '\nCounty: ' + data[6] + '\nLatitude: ' + data[9] + '\nLongitude: ' + data[10] + '\n'
         str += 'Date: ' + data[11] + '\n'
@@ -162,6 +172,25 @@ def lifelist(location, date, notes, sid, last, order):
         if sid:
             str += 'Submission ID: ' + data[0] + '\n'
         click.echo(str)
+    if additional:
+        click.echo("Additional taxa:\n")
+        for data in additionals:
+            str = data[1] + '\nLocation: ' + data[8] + '\n'
+            if location:
+                str += 'State/Province: ' + data[5] + '\nCounty: ' + data[6] + '\nLatitude: ' + data[9] + '\nLongitude: ' + data[10] + '\n'
+            str += 'Date: ' + data[11] + '\n'
+            if date:
+                str += 'Time: ' + data[12] + '\nDuration: ' + data[14] + '\n'
+            if notes:
+                if len(data) > 20:
+                    str += 'Breeding code: ' + data[19] + '\nNotes: ' + data[20] + '\n'
+                elif len(data) > 19:
+                    str += 'Breeding code: ' + data[19] + '\nNotes:\n'
+                else:
+                    str += 'Breeding code:\nNotes:\n'
+            if sid:
+                str += 'Submission ID: ' + data[0] + '\n'
+            click.echo(str)
     f.close()
 
 #checklist
