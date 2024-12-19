@@ -25,6 +25,7 @@
 #   -s: print submission ID
 #   -n: print checklist notes, species notes, and breeding codes
 #   -o: reverse order (newest first)
+#make some sort of way to edit a checklist
 
 #cbird import FILEPATH
 #takes in a csv file from ebird and generates a new csv file
@@ -35,6 +36,8 @@
 
 #cbird add
 #adds a checklist from user prompting to local csv, marks what is added as not in ebird
+
+#some sort of way to store photos associated with a checklist
 
 import click
 
@@ -81,6 +84,17 @@ def split(str): #splits a csv element by comma, but ignores commas in quotes
             index -= diff
         index += 1
     return list
+
+def generateLID(data):
+    #recieves data and returns a Local ID generated from data. LIDs are used to distinguish checklists locally.
+    date = data[11].replace("-", "")
+    time = data[12].replace(":", "")
+    if time[-3:] == " PM":
+        time = time[:-3]
+        time = int(time) + 1200
+    elif time[-3:] == " AM":
+        time = time[:-3]
+    return date + str(time)
 
 #species
 @cli.command()
@@ -240,6 +254,10 @@ def checklist(filter, location, date, notes, sid, order):
             str += 'Date: ' + checklist[0][11] + '\nProtocol: ' + checklist[0][13] + '\n'
             if date:
                 str += 'Time: ' + checklist[0][12] + '\nDuration: ' + checklist[0][14] + '\n'
+            if checklist[15] == 1:
+                str += "Complete Checklist\n"
+            else:
+                str += "Incomplete Checklist\n"
             if notes and len(checklist[0]) > 21:
                 str += 'Notes: ' + checklist[0][21] + '\n'
             if sid:
@@ -257,3 +275,46 @@ def checklist(filter, location, date, notes, sid, order):
     else:
         click.echo("Nothing matches your filter.")
     f.close()
+
+#importdata
+@cli.command()
+@click.argument("filepath", type=click.Path(exists=True, dir_okay=False))
+def importdata(filepath):
+    """Takes in an eBird .csv file and parses it to make it usable by this program. Must be run when first using this program."""
+    #eliminate taxonomic order, location ID, breeding code, ML catalog numbers
+    #modify SID (to LID)
+    #modify date, time, dist traveled, area covered according to user config
+    if filepath[-4:] != ".csv":
+        click.echo("Filetype must be .csv")
+    else:
+        f = open(filepath)
+        w = open("data.csv", "a")
+        for line in f:
+            data = split(line)
+            if data[0] != "Submission ID":
+                lid = generateLID(data)
+                newdata = [lid + ",", data[1] + ",", data[2] + ",", data[4] + ",", data[5] + ",", data[6] + ",", data[8] + ",", data[9] + ",", data[10] + ",", data[11] + ",", data[12] + ",", data[13] + ",", data[14] + ",", data[15] + ",", data[16] + ",", data[17] + ",", data[18] + ","]
+                if len(data) > 20:
+                    newdata.append(data[20] + ",")
+                else:
+                    newdata.append(",")
+                if len(data) > 21:
+                    newdata.append(data[21] + ",")
+                else:
+                    newdata.append(",")
+                str = ""
+                for d in newdata:
+                    str += d
+                str = str.replace("\n", "")
+                str = str[:-1]
+                w.write(str + "\n")
+
+
+            
+
+        
+
+#exportdata
+@cli.command()
+def exportdata():
+    """Exports data in the eBird Record Format as a .csv file stored in home directory."""
