@@ -26,6 +26,16 @@
 #   -n: print checklist notes, species notes, and breeding codes
 #   -o: reverse order (newest first)
 
+#cbird import FILEPATH
+#takes in a csv file from ebird and generates a new csv file
+# - ebird csv files have submission IDs, and this file creates new ids (local specific) and marks entries as in ebird
+
+#cbird export
+#creates csv file of all data that is not already in ebird
+
+#cbird add
+#adds a checklist from user prompting to local csv, marks what is added as not in ebird
+
 import click
 
 @click.group()
@@ -165,8 +175,6 @@ def lifelist(location, date, notes, sid, last, order):
 def checklist(filter, location, date, notes, sid, order):
     """Print all checklists, or filter by location, species, ID, etc."""
 
-#NEEDS TO HANDLE A SPECIES NOT FOUND
-
     f = open("MyEBirdData.csv")
     list = [] #list of entries that meet filter criteria (all if no filter)
     checklists = [] #array of array of entries
@@ -175,12 +183,12 @@ def checklist(filter, location, date, notes, sid, order):
         data = split(line)
         if not(indexOf(data, filter) == -1): #if filter term exists in data
             ids.append(data[0])
-    if len(ids) > 0:
+    if len(ids) > 0: #if there are ids that match filter
         f = open("MyEBirdData.csv")
         for line in f:
             data = split(line)
             for id in ids:
-                if data[0] == id:
+                if (data[0] == id) and (indexOf(list, data) == -1): #only add if data is not already in list
                     list.append(data)
         list.sort(key = byID)
 
@@ -211,11 +219,11 @@ def checklist(filter, location, date, notes, sid, order):
                 str += '\t' + data[4] + ' ' + data[1] + '\n'
                 if notes:
                     if len(data) > 20:
-                        str += 'Breeding code: ' + data[19] + '\nNotes: ' + data[20] + '\n'
+                        str += '\t\tBreeding code: ' + data[19] + '\n\t\tNotes: ' + data[20]
                     elif len(data) > 19:
-                        str += 'Breeding code: ' + data[19] + '\nNotes:\n'
+                        str += '\t\tBreeding code: ' + data[19] + '\n\t\tNotes:\n'
                     else:
-                        str += 'Breeding code:\nNotes:\n'
+                        str += '\t\tBreeding code:\n\t\tNotes:\n'
             click.echo(str)
     else:
         click.echo("Nothing matches your filter.")
