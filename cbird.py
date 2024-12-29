@@ -39,10 +39,22 @@
 
 #some sort of way to store photos associated with a checklist
 
+#add regional stats, so you can see how many bird you've seen in a certain area
+
 import click
+
 
 @click.group()
 def cli():
+    """
+     \b
+        __    _    -o'   __
+  ____./ /_  (_)___( )__/ /
+ / ___) _  \\/ / ___)"__  / 
+/ (__/ /_) / / /  / (_/ /  
+\\___/_.___/_/_/   \\__._/   
+
+    """
     pass
 
 def indexOf(array, element):
@@ -62,15 +74,18 @@ def byDate(data):
 def byID(data):
     return data[0]
 
-def split(str): #splits a csv element by comma, but ignores commas in quotes
-    list = str.split(",")
+def split(string): #splits a csv string into an array, but ignores commas that are in double quotes
+    list = string.split(",")
     quoteStartIndex = -1
     quoteEndIndex = -1
     index = 0
+    newList = []
     for element in list:
-        if element.startswith('"'):
+        if element.startswith('"') and element.endswith('"'):
+            newList.append(element)
+        elif element.startswith('"'):
             quoteStartIndex = index
-        if element.endswith('"') or element.endswith('"\n'):
+        elif element.endswith('"'):
             quoteEndIndex = index
             s = ""
             i = quoteStartIndex
@@ -78,12 +93,12 @@ def split(str): #splits a csv element by comma, but ignores commas in quotes
                 s += list[i] + ","
                 i += 1
             s += list[i]
-            s = s.replace('"', "")
-            list[quoteStartIndex:quoteEndIndex+1] = [s]
-            diff = quoteEndIndex - quoteStartIndex
-            index -= diff
+            newList.append(s)
+        else:
+            newList.append(element)
         index += 1
-    return list
+    return newList
+
 
 def generateLID(data):
     #recieves data and returns a Local ID generated from data. LIDs are used to distinguish checklists locally.
@@ -108,6 +123,7 @@ def species(species, location, date, notes, sid): #add additional filters? (ex: 
     f = open("MyEBirdData.csv")
     found = False
     for line in f:
+        line = line.replace("\n", "")
         data = split(line)
         if data[1].lower() == species.lower():
             found = True
@@ -148,6 +164,7 @@ def lifelist(location, date, notes, sid, last, order, additional):
     lifelist = []
     additionals = [] #spuh/slash list
     for line in f:
+        line = line.replace("\n", "")
         data = split(line)
         if last:
             if not(data[1] == species):
@@ -222,10 +239,16 @@ def checklist(filter, location, date, notes, sid, order):
     list = [] #list of entries that meet filter criteria (all if no filter)
     checklists = [] #array of array of entries
     ids = [] #list of submission ids associated with filter
+    
     for line in f:
+        line = line.replace("\n", "")
         data = split(line)
-        if not(indexOf(data, filter) == -1): #if filter term exists in data
-            ids.append(data[0])
+        if filter:
+            if not(indexOf(data, filter) == -1): #if filter term exists in data
+                ids.append(data[0])
+        else:
+            ids.append(data[0]) #currently also prints out first line --> don't need to change bc will not be a problem with import function
+    
     if len(ids) > 0: #if there are ids that match filter
         f = open("MyEBirdData.csv")
         for line in f:
@@ -254,7 +277,7 @@ def checklist(filter, location, date, notes, sid, order):
             str += 'Date: ' + checklist[0][11] + '\nProtocol: ' + checklist[0][13] + '\n'
             if date:
                 str += 'Time: ' + checklist[0][12] + '\nDuration: ' + checklist[0][14] + '\n'
-            if checklist[15] == 1:
+            if checklist[0][15] == 1:
                 str += "Complete Checklist\n"
             else:
                 str += "Incomplete Checklist\n"
@@ -264,13 +287,8 @@ def checklist(filter, location, date, notes, sid, order):
                 str += 'Submission ID: ' + checklist[0][0] + '\n'
             for data in checklist:
                 str += '\t' + data[4] + ' ' + data[1] + '\n'
-                if notes:
-                    if len(data) > 20:
-                        str += '\t\tBreeding code: ' + data[19] + '\n\t\tNotes: ' + data[20]
-                    elif len(data) > 19:
-                        str += '\t\tBreeding code: ' + data[19] + '\n\t\tNotes:\n'
-                    else:
-                        str += '\t\tBreeding code:\n\t\tNotes:\n'
+                if notes and len(data) > 20:
+                    str += '\t\tNotes: ' + data[20]
             click.echo(str)
     else:
         click.echo("Nothing matches your filter.")
@@ -279,8 +297,8 @@ def checklist(filter, location, date, notes, sid, order):
 #importdata
 @cli.command()
 @click.argument("filepath", type=click.Path(exists=True, dir_okay=False))
-def importdata(filepath):
-    """Takes in an eBird .csv file and parses it to make it usable by this program. Must be run when first using this program."""
+def Import(filepath):
+    """Import eBird data to this program."""
     #eliminate taxonomic order, location ID, breeding code, ML catalog numbers
     #modify SID (to LID)
     #modify date, time, dist traveled, area covered according to user config
@@ -290,18 +308,20 @@ def importdata(filepath):
         f = open(filepath)
         w = open("data.csv", "a")
         for line in f:
+            line = line.replace("\n", "")
             data = split(line)
+            print(data)
             if data[0] != "Submission ID":
                 lid = generateLID(data)
-                newdata = [lid + ",", data[1] + ",", data[2] + ",", data[4] + ",", data[5] + ",", data[6] + ",", data[8] + ",", data[9] + ",", data[10] + ",", data[11] + ",", data[12] + ",", data[13] + ",", data[14] + ",", data[15] + ",", data[16] + ",", data[17] + ",", data[18] + ","]
+                newdata = [lid + ',', data[1] + ',', data[2] + ',', data[4] + ',', data[5] + ',', data[6] + ',', data[8] + ',', data[9] + ',', data[10] + ',', data[11] + ',', data[12] + ',', data[13] + ',', data[14] + ',', data[15] + ',', data[16] + ',', data[17] + ',', data[18] + ',']
                 if len(data) > 20:
-                    newdata.append(data[20] + ",")
+                    newdata.append(data[20] + ',')
                 else:
-                    newdata.append(",")
+                    newdata.append(',')
                 if len(data) > 21:
-                    newdata.append(data[21] + ",")
+                    newdata.append(data[21] + ',')
                 else:
-                    newdata.append(",")
+                    newdata.append(',')
                 str = ""
                 for d in newdata:
                     str += d
@@ -316,5 +336,5 @@ def importdata(filepath):
 
 #exportdata
 @cli.command()
-def exportdata():
-    """Exports data in the eBird Record Format as a .csv file stored in home directory."""
+def export():
+    """Export data from this program to eBird."""
