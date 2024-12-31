@@ -94,7 +94,8 @@ def split(string): #splits a csv string into an array, but ignores commas that a
                 i += 1
             s += list[i]
             newList.append(s)
-        else:
+            quoteStartIndex = -1
+        elif not(index > quoteStartIndex and not(quoteStartIndex == -1)):
             newList.append(element)
         index += 1
     return newList
@@ -310,10 +311,19 @@ def Import(filepath):
         for line in f:
             line = line.replace("\n", "")
             data = split(line)
-            print(data)
+            #print(data)
             if data[0] != "Submission ID":
                 lid = generateLID(data)
-                newdata = [lid + ',', data[1] + ',', data[2] + ',', data[4] + ',', data[5] + ',', data[6] + ',', data[8] + ',', data[9] + ',', data[10] + ',', data[11] + ',', data[12] + ',', data[13] + ',', data[14] + ',', data[15] + ',', data[16] + ',', data[17] + ',', data[18] + ',']
+                p = ""
+                if data[13] == "eBird - Traveling Count":
+                    p = "Traveling"
+                elif data[13] == "eBird - Casual Observation":
+                    p = "Casual"
+                elif data[13] == "eBird - Stationary Count":
+                    p = "Stationary"
+                elif data[13] != "Historical":
+                    p = "Other"
+                newdata = [lid + ',', data[1] + ',', data[2] + ',', data[4] + ',', data[5] + ',', data[6] + ',', data[8] + ',', data[9] + ',', data[10] + ',', data[11] + ',', data[12] + ',', p + ',', data[14] + ',', data[15] + ',', data[16] + ',', data[17] + ',', data[18] + ',']
                 if len(data) > 20:
                     newdata.append(data[20] + ',')
                 else:
