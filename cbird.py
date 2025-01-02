@@ -67,9 +67,9 @@ def indexOf(array, element):
 
 def byDate(data):
     if str(type(data[0])) == "<class 'str'>":
-        return data[11].replace("-", "")
+        return data[9].replace("-", "")
     else:
-        return data[0][11].replace("-", "")
+        return data[0][9].replace("-", "")
 
 def byID(data):
     return data[0]
@@ -101,7 +101,7 @@ def split(string): #splits a csv string into an array, but ignores commas that a
     return newList
 
 
-def generateLID(data):
+def generateLID(data): #ALTER TO RECIEVE DATE AND TIME DIRECTLY
     #recieves data and returns a Local ID generated from data. LIDs are used to distinguish checklists locally.
     date = data[11].replace("-", "")
     time = data[12].replace(":", "")
@@ -118,31 +118,24 @@ def generateLID(data):
 @click.option("-l", "--location", is_flag = True, help="Print full location info (state/province, county, latitude and longitude)")
 @click.option("-d", "--date", is_flag = True, help="Print time and duration, in addition to date")
 @click.option("-n", "--notes", is_flag = True, help="Print species notes and breeding codes")
-@click.option("-s", "--sid", is_flag = True, help="Print submission ID")
-def species(species, location, date, notes, sid): #add additional filters? (ex: by date or location)
+def species(species, location, date, notes): #add additional filters? (ex: by date or location)
     """Prints location and date of a given species."""
-    f = open("MyEBirdData.csv")
+    f = open("data.csv")
     found = False
     for line in f:
         line = line.replace("\n", "")
         data = split(line)
         if data[1].lower() == species.lower():
             found = True
-            str = data[1] + '\nLocation: ' + data[8] + '\n'
+            str = data[1] + '\nLocation: ' + data[6] + '\n'
             if location:
-                str += 'State/Province: ' + data[5] + '\nCounty: ' + data[6] + '\nLatitude: ' + data[9] + '\nLongitude: ' + data[10] + '\n'
-            str += 'Date: ' + data[11] + '\n'
+                str += 'State/Province: ' + data[4] + '\nCounty: ' + data[5] + '\nLatitude: ' + data[7] + '\nLongitude: ' + data[8] + '\n'
+            str += 'Date: ' + data[9] + '\n'
             if date:
-                str += 'Time: ' + data[12] + '\nDuration: ' + data[14] + '\n'
+                str += 'Time: ' + data[10] + '\nDuration: ' + data[12] + '\n'
             if notes:
-                if len(data) > 20:
-                    str += 'Breeding code: ' + data[19] + '\nNotes: ' + data[20] + '\n'
-                elif len(data) > 19:
-                    str += 'Breeding code: ' + data[19] + '\nNotes:\n'
-                else:
-                    str += 'Breeding code:\nNotes:\n'
-            if sid:
-                str += 'Submission ID: ' + data[20] + '\n'
+                if data[17] != "":
+                    str += 'Notes: ' + data[17] + '\n'
             click.echo(str)
     if not(found):
         click.echo("Species not found")
@@ -153,75 +146,61 @@ def species(species, location, date, notes, sid): #add additional filters? (ex: 
 @click.option("-l", "--location", is_flag = True, help="Print full location info (state/province, county, latitude and longitude)")
 @click.option("-d", "--date", is_flag = True, help="Print time and duration, in addition to date")
 @click.option("-n", "--notes", is_flag = True, help="Print species notes and breeding codes")
-@click.option("-s", "--sid", is_flag = True, help="Print submission ID")
 @click.option("-L", "--last", is_flag = True, help="Sort by last seen")
 @click.option("-o", "--order", is_flag = True, help="Sort by newest sightings first")
 @click.option("-a", "--additional", is_flag = True, help="List additional taxa (spuhs and slashes) if present")
-def lifelist(location, date, notes, sid, last, order, additional):
+def lifelist(location, date, notes, last, order, additional):
     """Prints life list sorted by date. Oldest sightings first, sorted by first seen"""
-    f = open("MyEBirdData.csv")
-    species = "Common Name"
-    prevData = []
-    lifelist = []
+    f = open("data.csv")
+    species = ""
+    lifelist = [] #array of species arrays of data arrays
     additionals = [] #spuh/slash list
+    list = []
+
     for line in f:
         line = line.replace("\n", "")
         data = split(line)
-        if last:
-            if not(data[1] == species):
-                if data[1].find(".") == -1 and data[1].find("/") == -1: #if not spuh/slash
-                    lifelist.append(data)
-                else:
-                    if additional:
-                        additionals.append(data)
+        if len(list) == 0:
+            list.append([data])
         else:
-            if not(data[1] == species):
-                species = data[1]
-                if not(prevData[1] == "Common Name"):
-                    if data[1].find(".") == -1 and data[1].find("/") == -1: #if not spuh/slash
-                        lifelist.append(data)
-                    else:
-                        if additional:
-                            additionals.append(data)
-                prevData = data
-            else:
-                prevData = data
+            isAdded = False
+            for specieslist in list:
+                if specieslist[0][1] == data[1]:
+                    isAdded = True
+                    specieslist.append(data)
+            if not(isAdded):
+                list.append([data])
+    for specieslist in list:
+        specieslist.sort(key = byDate, reverse = last)
+        if specieslist[0][1].find(".") == -1 and specieslist[0][1].find("/") == -1: #if not spuh/slash
+            lifelist.append(specieslist[0])
+        else:
+            if additional:
+                additionals.append(specieslist[0])
     lifelist.sort(key = byDate, reverse = order)
     for data in lifelist:
-        str = data[1] + '\nLocation: ' + data[8] + '\n'
+        str = data[1] + '\nLocation: ' + data[6] + '\n'
         if location:
-            str += 'State/Province: ' + data[5] + '\nCounty: ' + data[6] + '\nLatitude: ' + data[9] + '\nLongitude: ' + data[10] + '\n'
-        str += 'Date: ' + data[11] + '\n'
+            str += 'State/Province: ' + data[4] + '\nCounty: ' + data[5] + '\nLatitude: ' + data[7] + '\nLongitude: ' + data[8] + '\n'
+        str += 'Date: ' + data[9] + '\n'
         if date:
-            str += 'Time: ' + data[12] + '\nDuration: ' + data[14] + '\n'
+            str += 'Time: ' + data[10] + '\nDuration: ' + data[12] + '\n'
         if notes:
-            if len(data) > 20:
-                str += 'Breeding code: ' + data[19] + '\nNotes: ' + data[20] + '\n'
-            elif len(data) > 19:
-                str += 'Breeding code: ' + data[19] + '\nNotes:\n'
-            else:
-                str += 'Breeding code:\nNotes:\n'
-        if sid:
-            str += 'Submission ID: ' + data[0] + '\n'
+            if data[17] != "":
+                str += 'Notes: ' + data[17] + '\n'
         click.echo(str)
     if additional:
         click.echo("Additional taxa:\n")
         for data in additionals:
-            str = data[1] + '\nLocation: ' + data[8] + '\n'
+            str = data[1] + '\nLocation: ' + data[6] + '\n'
             if location:
-                str += 'State/Province: ' + data[5] + '\nCounty: ' + data[6] + '\nLatitude: ' + data[9] + '\nLongitude: ' + data[10] + '\n'
-            str += 'Date: ' + data[11] + '\n'
+                str += 'State/Province: ' + data[4] + '\nCounty: ' + data[5] + '\nLatitude: ' + data[7] + '\nLongitude: ' + data[8] + '\n'
+            str += 'Date: ' + data[9] + '\n'
             if date:
-                str += 'Time: ' + data[12] + '\nDuration: ' + data[14] + '\n'
+                str += 'Time: ' + data[10] + '\nDuration: ' + data[12] + '\n'
             if notes:
-                if len(data) > 20:
-                    str += 'Breeding code: ' + data[19] + '\nNotes: ' + data[20] + '\n'
-                elif len(data) > 19:
-                    str += 'Breeding code: ' + data[19] + '\nNotes:\n'
-                else:
-                    str += 'Breeding code:\nNotes:\n'
-            if sid:
-                str += 'Submission ID: ' + data[0] + '\n'
+                if data[17] != "":
+                    str += 'Notes: ' + data[17] + '\n'
             click.echo(str)
     f.close()
 
