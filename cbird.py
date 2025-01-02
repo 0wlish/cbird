@@ -210,12 +210,11 @@ def lifelist(location, date, notes, last, order, additional):
 @click.option("-l", "--location", is_flag = True, help="Print full location info (state/province, county, latitude and longitude)")
 @click.option("-d", "--date", is_flag = True, help="Print time and duration, in addition to date")
 @click.option("-n", "--notes", is_flag = True, help="Print species notes and breeding codes")
-@click.option("-s", "--sid", is_flag = True, help="Print submission ID")
 @click.option("-o", "--order", is_flag = True, help="Sort by newest checklists first")
-def checklist(filter, location, date, notes, sid, order):
-    """Print all checklists, or filter by location, species, ID, etc."""
+def checklist(filter, location, date, notes, order):
+    """Print all checklists, or filter by location, species, date etc."""
 
-    f = open("MyEBirdData.csv")
+    f = open("data.csv")
     list = [] #list of entries that meet filter criteria (all if no filter)
     checklists = [] #array of array of entries
     ids = [] #list of submission ids associated with filter
@@ -230,7 +229,7 @@ def checklist(filter, location, date, notes, sid, order):
             ids.append(data[0]) #currently also prints out first line --> don't need to change bc will not be a problem with import function
     
     if len(ids) > 0: #if there are ids that match filter
-        f = open("MyEBirdData.csv")
+        f = open("data.csv")
         for line in f:
             data = split(line)
             for id in ids:
@@ -251,24 +250,24 @@ def checklist(filter, location, date, notes, sid, order):
         checklists.append(checklist)
         checklists.sort(key = byDate, reverse = order)
         for checklist in checklists:
-            str = 'Location: ' + checklist[0][8] + '\n'
+            str = 'Location: ' + checklist[0][6] + '\n'
             if location:
-                str += 'State/Province: ' + checklist[0][5] + '\nCounty: ' + checklist[0][6] + '\nLatitude: ' + checklist[0][9] + '\nLongitude: ' + checklist[0][10] + '\n'
-            str += 'Date: ' + checklist[0][11] + '\nProtocol: ' + checklist[0][13] + '\n'
+                str += 'State/Province: ' + checklist[0][4] + '\nCounty: ' + checklist[0][5] + '\nLatitude: ' + checklist[0][7] + '\nLongitude: ' + checklist[0][8] + '\n'
+            str += 'Date: ' + checklist[0][9] + '\nProtocol: ' + checklist[0][11] + '\n'
             if date:
-                str += 'Time: ' + checklist[0][12] + '\nDuration: ' + checklist[0][14] + '\n'
+                str += 'Time: ' + checklist[0][10] + '\nDuration: ' + checklist[0][12] + '\n'
             if checklist[0][15] == 1:
                 str += "Complete Checklist\n"
             else:
                 str += "Incomplete Checklist\n"
-            if notes and len(checklist[0]) > 21:
-                str += 'Notes: ' + checklist[0][21] + '\n'
-            if sid:
-                str += 'Submission ID: ' + checklist[0][0] + '\n'
+            if notes:
+                if checklist[0][17] != "":
+                    str += 'Notes: ' + checklist[0][17] + '\n'
             for data in checklist:
-                str += '\t' + data[4] + ' ' + data[1] + '\n'
-                if notes and len(data) > 20:
-                    str += '\t\tNotes: ' + data[20]
+                str += '\t' + data[3] + ' ' + data[1] + '\n'
+                if notes:
+                    if data[17] != "":
+                        str += 'Notes: ' + data[17] + '\n'
             click.echo(str)
     else:
         click.echo("Nothing matches your filter.")
