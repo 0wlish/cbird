@@ -41,6 +41,10 @@
 
 #add regional stats, so you can see how many bird you've seen in a certain area
 
+#other features:
+#   user config file
+#   check user entered species against ebird taxonomy
+
 import click
 
 
@@ -67,9 +71,12 @@ def indexOf(array, element):
 
 def byDate(data):
     if str(type(data[0])) == "<class 'str'>":
-        return data[9].replace("-", "")
+        return data[10].replace("-", "")
     else:
-        return data[0][9].replace("-", "")
+        return data[0][10].replace("-", "")
+    
+def byTaxon(data):
+    return int(data[3])
 
 def byID(data):
     return data[0]
@@ -127,15 +134,15 @@ def species(species, location, date, notes): #add additional filters? (ex: by da
         data = split(line)
         if data[1].lower() == species.lower():
             found = True
-            str = data[1] + '\nLocation: ' + data[6] + '\n'
+            str = data[1] + '\nLocation: ' + data[8] + '\n'
             if location:
-                str += 'State/Province: ' + data[4] + '\nCounty: ' + data[5] + '\nLatitude: ' + data[7] + '\nLongitude: ' + data[8] + '\n'
-            str += 'Date: ' + data[9] + '\n'
+                str += 'Country: ' + data[6] + '\nState/Province: ' + data[5] + '\nCounty: ' + data[7] + '\nLatitude: ' + data[9] + '\nLongitude: ' + data[10] + '\n'
+            str += 'Date: ' + data[11] + '\n'
             if date:
-                str += 'Time: ' + data[10] + '\nDuration: ' + data[12] + '\n'
+                str += 'Time: ' + data[12] + '\nDuration: ' + data[14] + ' min\n'
             if notes:
-                if data[17] != "":
-                    str += 'Notes: ' + data[17] + '\n'
+                if data[19] != "":
+                    str += 'Notes: ' + data[19] + '\n'
             click.echo(str)
     if not(found):
         click.echo("Species not found")
@@ -179,28 +186,28 @@ def lifelist(location, date, notes, last, order, additional):
                 additionals.append(specieslist[0])
     lifelist.sort(key = byDate, reverse = order)
     for data in lifelist:
-        str = data[1] + '\nLocation: ' + data[6] + '\n'
+        str = data[1] + '\nLocation: ' + data[8] + '\n'
         if location:
-            str += 'State/Province: ' + data[4] + '\nCounty: ' + data[5] + '\nLatitude: ' + data[7] + '\nLongitude: ' + data[8] + '\n'
-        str += 'Date: ' + data[9] + '\n'
+            str += 'Country: ' + data[6] + '\nState/Province: ' + data[5] + '\nCounty: ' + data[7] + '\nLatitude: ' + data[9] + '\nLongitude: ' + data[10] + '\n'
+        str += 'Date: ' + data[11] + '\n'
         if date:
-            str += 'Time: ' + data[10] + '\nDuration: ' + data[12] + '\n'
+            str += 'Time: ' + data[12] + '\nDuration: ' + data[14] + ' min\n'
         if notes:
-            if data[17] != "":
-                str += 'Notes: ' + data[17] + '\n'
+            if data[19] != "":
+                str += 'Notes: ' + data[19] + '\n'
         click.echo(str)
     if additional:
         click.echo("Additional taxa:\n")
         for data in additionals:
-            str = data[1] + '\nLocation: ' + data[6] + '\n'
+            str = data[1] + '\nLocation: ' + data[8] + '\n'
             if location:
-                str += 'State/Province: ' + data[4] + '\nCounty: ' + data[5] + '\nLatitude: ' + data[7] + '\nLongitude: ' + data[8] + '\n'
-            str += 'Date: ' + data[9] + '\n'
+                str += 'Country: ' + data[6] + '\nState/Province: ' + data[5] + '\nCounty: ' + data[7] + '\nLatitude: ' + data[9] + '\nLongitude: ' + data[10] + '\n'
+            str += 'Date: ' + data[11] + '\n'
             if date:
-                str += 'Time: ' + data[10] + '\nDuration: ' + data[12] + '\n'
+                str += 'Time: ' + data[12] + '\nDuration: ' + data[14] + ' min\n'
             if notes:
-                if data[17] != "":
-                    str += 'Notes: ' + data[17] + '\n'
+                if data[19] != "":
+                    str += 'Notes: ' + data[19] + '\n'
             click.echo(str)
     f.close()
 
@@ -250,37 +257,35 @@ def checklist(filter, location, date, notes, order):
         checklists.append(checklist)
         checklists.sort(key = byDate, reverse = order)
         for checklist in checklists:
-            str = 'Location: ' + checklist[0][6] + '\n'
+            checklist.sort(key = byTaxon)
+            str = 'Location: ' + checklist[0][8] + '\n'
             if location:
-                str += 'State/Province: ' + checklist[0][4] + '\nCounty: ' + checklist[0][5] + '\nLatitude: ' + checklist[0][7] + '\nLongitude: ' + checklist[0][8] + '\n'
-            str += 'Date: ' + checklist[0][9] + '\nProtocol: ' + checklist[0][11] + '\n'
+                str += 'Country: ' + checklist[0][6] + '\nState/Province: ' + checklist[0][5] + '\nCounty: ' + checklist[0][7] + '\nLatitude: ' + checklist[0][9] + '\nLongitude: ' + checklist[0][10] + '\n'
+            str += 'Date: ' + checklist[0][11] + '\nProtocol: ' + checklist[0][13] + '\n'
             if date:
-                str += 'Time: ' + checklist[0][10] + '\nDuration: ' + checklist[0][12] + '\n'
-            if checklist[0][15] == 1:
+                str += 'Time: ' + checklist[0][12] + '\nDuration: ' + checklist[0][14] + ' min\n'
+            if checklist[0][18] == 1:
                 str += "Complete Checklist\n"
             else:
                 str += "Incomplete Checklist\n"
             if notes:
-                if checklist[0][17] != "":
-                    str += 'Notes: ' + checklist[0][17] + '\n'
+                if checklist[0][20] != "":
+                    str += 'Notes: ' + checklist[0][20] + '\n'
             for data in checklist:
-                str += '\t' + data[3] + ' ' + data[1] + '\n'
+                str += '\t' + data[4] + ' ' + data[1] + '\n'
                 if notes:
-                    if data[17] != "":
-                        str += 'Notes: ' + data[17] + '\n'
+                    if data[19] != "":
+                        str += '\t\tNotes: ' + data[19] + '\n'
             click.echo(str)
     else:
         click.echo("Nothing matches your filter.")
     f.close()
 
-#importdata
+#import
 @cli.command()
 @click.argument("filepath", type=click.Path(exists=True, dir_okay=False))
 def Import(filepath):
-    """Import eBird data to this program."""
-    #eliminate taxonomic order, location ID, breeding code, ML catalog numbers
-    #modify SID (to LID)
-    #modify date, time, dist traveled, area covered according to user config
+    """Import eBird data to this program.""" #N0TE: Delete province, county, lat, long? <--will users want to enter all this in manually?
     if filepath[-4:] != ".csv":
         click.echo("Filetype must be .csv")
     else:
@@ -292,6 +297,8 @@ def Import(filepath):
             #print(data)
             if data[0] != "Submission ID":
                 lid = generateLID(data)
+                state = data[5].split("-")[1]
+                country = data[5].split("-")[0]
                 p = ""
                 if data[13] == "eBird - Traveling Count":
                     p = "Traveling"
@@ -301,7 +308,7 @@ def Import(filepath):
                     p = "Stationary"
                 elif data[13] != "Historical":
                     p = "Other"
-                newdata = [lid + ',', data[1] + ',', data[2] + ',', data[4] + ',', data[5] + ',', data[6] + ',', data[8] + ',', data[9] + ',', data[10] + ',', data[11] + ',', data[12] + ',', p + ',', data[14] + ',', data[15] + ',', data[16] + ',', data[17] + ',', data[18] + ',']
+                newdata = [lid + ',', data[1] + ',', data[2] + ',', data[3] + ',', data[4] + ',', state + ',', country + ',', data[6] + ',', data[8] + ',', data[9] + ',', data[10] + ',', data[11] + ',', data[12] + ',', p + ',', data[14] + ',', data[15] + ',', data[16] + ',', data[17] + ',', data[18] + ',']
                 if len(data) > 20:
                     newdata.append(data[20] + ',')
                 else:
@@ -310,19 +317,31 @@ def Import(filepath):
                     newdata.append(data[21] + ',')
                 else:
                     newdata.append(',')
+                newdata.append("T") #stands for Tracked, indicates that this entry is up-to-date w/ ebird
                 str = ""
                 for d in newdata:
                     str += d
                 str = str.replace("\n", "")
-                str = str[:-1]
                 w.write(str + "\n")
+   
 
-
-            
-
-        
-
-#exportdata
+#export
 @cli.command()
 def export():
     """Export data from this program to eBird."""
+
+#create
+@cli.command()
+def create():
+    """Create a new checklist."""
+    click.echo("Note that eBird protocols are Traveling, Stationary, and Casual. Use your own, if you want.")
+    protocol = click.prompt("Protocol")
+    date = click.prompt("Date (yyyy-mm-dd)")
+    time = click.prompt("Time")
+    duration = ""
+    effort = ""
+    if not(protocol.lower() == "casual"):
+        duration = click.prompt("Duration")
+        effort = click.prompt("All species reported (y/n)", type=click.Choice(["y", "n"]), case_sensitive=False)
+    else:
+        effort = "n"
