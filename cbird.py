@@ -141,8 +141,8 @@ def species(species, location, date, notes): #add additional filters? (ex: by da
             if date:
                 str += 'Time: ' + data[12] + '\nDuration: ' + data[14] + ' min\n'
             if notes:
-                if data[19] != "":
-                    str += 'Notes: ' + data[19] + '\n'
+                if data[18] != "":
+                    str += 'Notes: ' + data[18] + '\n'
             click.echo(str)
     if not(found):
         click.echo("Species not found")
@@ -193,8 +193,8 @@ def lifelist(location, date, notes, last, order, additional):
         if date:
             str += 'Time: ' + data[12] + '\nDuration: ' + data[14] + ' min\n'
         if notes:
-            if data[19] != "":
-                str += 'Notes: ' + data[19] + '\n'
+            if data[18] != "":
+                str += 'Notes: ' + data[18] + '\n'
         click.echo(str)
     if additional:
         click.echo("Additional taxa:\n")
@@ -206,8 +206,8 @@ def lifelist(location, date, notes, last, order, additional):
             if date:
                 str += 'Time: ' + data[12] + '\nDuration: ' + data[14] + ' min\n'
             if notes:
-                if data[19] != "":
-                    str += 'Notes: ' + data[19] + '\n'
+                if data[18] != "":
+                    str += 'Notes: ' + data[18] + '\n'
             click.echo(str)
     f.close()
 
@@ -262,20 +262,22 @@ def checklist(filter, location, date, notes, order):
             if location:
                 str += 'Country: ' + checklist[0][6] + '\nState/Province: ' + checklist[0][5] + '\nCounty: ' + checklist[0][7] + '\nLatitude: ' + checklist[0][9] + '\nLongitude: ' + checklist[0][10] + '\n'
             str += 'Date: ' + checklist[0][11] + '\nProtocol: ' + checklist[0][13] + '\n'
+            if checklist[0][13] == "Traveling":
+                str += 'Distance: ' + checklist[0][16] + ' mi\n'
             if date:
                 str += 'Time: ' + checklist[0][12] + '\nDuration: ' + checklist[0][14] + ' min\n'
-            if checklist[0][18] == 1:
+            if checklist[0][17] == 1:
                 str += "Complete Checklist\n"
             else:
                 str += "Incomplete Checklist\n"
             if notes:
-                if checklist[0][20] != "":
-                    str += 'Notes: ' + checklist[0][20] + '\n'
+                if checklist[0][19] != "":
+                    str += 'Notes: ' + checklist[0][19] + '\n'
             for data in checklist:
                 str += '\t' + data[4] + ' ' + data[1] + '\n'
                 if notes:
-                    if data[19] != "":
-                        str += '\t\tNotes: ' + data[19] + '\n'
+                    if data[18] != "":
+                        str += '\t\tNotes: ' + data[18] + '\n'
             click.echo(str)
     else:
         click.echo("Nothing matches your filter.")
@@ -308,7 +310,7 @@ def Import(filepath):
                     p = "Stationary"
                 elif data[13] != "Historical":
                     p = "Other"
-                newdata = [lid + ',', data[1] + ',', data[2] + ',', data[3] + ',', data[4] + ',', state + ',', country + ',', data[6] + ',', data[8] + ',', data[9] + ',', data[10] + ',', data[11] + ',', data[12] + ',', p + ',', data[14] + ',', data[15] + ',', data[16] + ',', data[17] + ',', data[18] + ',']
+                newdata = [lid + ',', data[1] + ',', data[2] + ',', data[3] + ',', data[4] + ',', state + ',', country + ',', data[6] + ',', data[8] + ',', data[9] + ',', data[10] + ',', data[11] + ',', data[12] + ',', p + ',', data[14] + ',', data[15] + ',', data[16] + ',', data[18] + ',']
                 if len(data) > 20:
                     newdata.append(data[20] + ',')
                 else:
@@ -334,14 +336,27 @@ def export():
 @cli.command()
 def create():
     """Create a new checklist."""
-    click.echo("Note that eBird protocols are Traveling, Stationary, and Casual. Use your own, if you want.")
-    protocol = click.prompt("Protocol")
+    #required: protocol, date, time, effort, num birdwatchers
+    #required if stationary or traveling: duration
+    #required if traveling: distance
+    #optional: lat, long
+
+    protocol = click.prompt("Protocol", type=click.Choice(["Traveling", "Stationary", "Casual", "Other"]), show_choices=True)
     date = click.prompt("Date (yyyy-mm-dd)")
     time = click.prompt("Time")
+    observers = click.prompt("Party size", type=int)
     duration = ""
     effort = ""
-    if not(protocol.lower() == "casual"):
+    distance = ""
+    if not(protocol == "Casual"):
         duration = click.prompt("Duration")
         effort = click.prompt("All species reported (y/n)", type=click.Choice(["y", "n"]), case_sensitive=False)
-    else:
+        if protocol == "Traveling":
+            distance = click.prompt("Distance traveled")
+    else: #if it is casual
         effort = "n"
+    comments = click.prompt("Checklist comments", default="")
+    country = click.prompt("Country", default="")
+    stprov = click.prompt("State/province", default="")
+    latitude = click.prompt("Latitude", default="")
+    longitude = click.prompt("Longitude", default="")
