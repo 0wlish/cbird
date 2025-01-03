@@ -108,10 +108,10 @@ def split(string): #splits a csv string into an array, but ignores commas that a
     return newList
 
 
-def generateLID(data): #ALTER TO RECIEVE DATE AND TIME DIRECTLY
+def generateLID(date, time):
     #recieves data and returns a Local ID generated from data. LIDs are used to distinguish checklists locally.
-    date = data[11].replace("-", "")
-    time = data[12].replace(":", "")
+    date = date.replace("-", "")
+    time = time.replace(":", "")
     if time[-3:] == " PM":
         time = time[:-3]
         time = int(time) + 1200
@@ -119,6 +119,21 @@ def generateLID(data): #ALTER TO RECIEVE DATE AND TIME DIRECTLY
         time = time[:-3]
     return date + str(time)
 
+def getScientific(common):
+    #gets scientific name from common name by fetching from ebird taxonomy
+    f = open("eBird_taxonomy.csv")
+    for line in f:
+        split(line)[4] == common
+        return split(line)[5]
+    return "not found :("
+
+def getTaxon(common):
+    #gets taxon code
+    f = open("eBird_taxonomy.csv")
+    for line in f:
+        split(line)[4] == common
+        return split(line)[0]
+    return "not found :("
 #species
 @cli.command()
 @click.argument("species", type=str)
@@ -298,7 +313,7 @@ def Import(filepath):
             data = split(line)
             #print(data)
             if data[0] != "Submission ID":
-                lid = generateLID(data)
+                lid = generateLID(data[11], data[12])
                 state = data[5].split("-")[1]
                 country = data[5].split("-")[0]
                 p = ""
@@ -341,22 +356,50 @@ def create():
     #required if traveling: distance
     #optional: lat, long
 
-    protocol = click.prompt("Protocol", type=click.Choice(["Traveling", "Stationary", "Casual", "Other"]), show_choices=True)
+    protocol = click.prompt("Protocol", type=click.Choice(["Traveling", "Stationary", "Casual"]), show_choices=True)
     date = click.prompt("Date (yyyy-mm-dd)")
     time = click.prompt("Time")
     observers = click.prompt("Party size", type=int)
+    location = click.prompt("Location")
+    if location.find('"') != -1:
+        location = '"' + location + '"'
     duration = ""
     effort = ""
     distance = ""
     if not(protocol == "Casual"):
-        duration = click.prompt("Duration")
-        effort = click.prompt("All species reported (y/n)", type=click.Choice(["y", "n"]), case_sensitive=False)
+        duration = click.prompt("Duration (min)")
+        if click.prompt("All species reported (y/n)", type=click.Choice(["y", "n"]), show_choices=False) == "y":
+            effort = "1"
+        else:
+            effort = "0"
         if protocol == "Traveling":
             distance = click.prompt("Distance traveled")
     else: #if it is casual
-        effort = "n"
-    comments = click.prompt("Checklist comments", default="")
-    country = click.prompt("Country", default="")
-    stprov = click.prompt("State/province", default="")
-    latitude = click.prompt("Latitude", default="")
-    longitude = click.prompt("Longitude", default="")
+        effort = "0"
+    comments = click.prompt("Checklist comments", default="", show_default=False)
+    if comments.find('"') != -1:
+        comments = '"' + comments + '"'
+    country = click.prompt("Country", default="", show_default=False)
+    county = click.prompt("County", default="", show_default=False)
+    stprov = click.prompt("State/province", default="", show_default=False)
+    latitude = click.prompt("Latitude", default="", show_default=False)
+    longitude = click.prompt("Longitude", default="", show_default=False)
+    species = []
+    s = ""
+    click.echo("Enter species and how many. One species at a time. Type \"stop\" when you are finished.")
+    while not(s == "stop"):
+        s = click.prompt("Enter species")
+        if not(s == "stop"):
+            n = click.prompt("How many")
+            c = ""
+            if click.prompt("Add comments (y/n)", type=click.Choice(["y", "n"]), show_choices=False) == "y":
+                c = click.prompt("Comments")
+                if c.find('"') != -1:
+                    c = '"' + c + '"'
+            species.append([s, n, c])
+    print(species)
+    entry = ""
+    for s in species:
+        lid = generateLID(date, time)
+        entry += str(lid) + ',' + s[0] + ',' + getScientific(s[0]) + ',' + str(getTaxon(s[0])) + ',' + str(s[1]) + ',' + stprov + ',' + country + ',' + county + ',' + location + ',' + str(latitude) + ',' + str(longitude) + ',' + date + ',' + time + ',' + protocol + ',' + str(duration) + ',' + str(effort) + ',' + str(distance) + ',' + str(observers) + ',' + s[2] + ',' + comments + ',U'
+    print(entry)
