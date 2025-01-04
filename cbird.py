@@ -123,16 +123,16 @@ def getScientific(common):
     #gets scientific name from common name by fetching from ebird taxonomy
     f = open("eBird_taxonomy.csv")
     for line in f:
-        split(line)[4] == common
-        return split(line)[5]
+        if split(line)[4] == common:
+            return split(line)[5]
     return "not found :("
 
 def getTaxon(common):
     #gets taxon code
     f = open("eBird_taxonomy.csv")
     for line in f:
-        split(line)[4] == common
-        return split(line)[0]
+        if split(line)[4] == common:
+            return split(line)[0]
     return "not found :("
 #species
 @cli.command()
@@ -361,7 +361,7 @@ def create():
     time = click.prompt("Time")
     observers = click.prompt("Party size", type=int)
     location = click.prompt("Location")
-    if location.find('"') != -1:
+    if location.find(',') != -1:
         location = '"' + location + '"'
     duration = ""
     effort = ""
@@ -377,7 +377,7 @@ def create():
     else: #if it is casual
         effort = "0"
     comments = click.prompt("Checklist comments", default="", show_default=False)
-    if comments.find('"') != -1:
+    if comments.find(',') != -1:
         comments = '"' + comments + '"'
     country = click.prompt("Country", default="", show_default=False)
     county = click.prompt("County", default="", show_default=False)
@@ -394,12 +394,12 @@ def create():
             c = ""
             if click.prompt("Add comments (y/n)", type=click.Choice(["y", "n"]), show_choices=False) == "y":
                 c = click.prompt("Comments")
-                if c.find('"') != -1:
+                if c.find(',') != -1:
                     c = '"' + c + '"'
             species.append([s, n, c])
     print(species)
     entry = ""
     for s in species:
         lid = generateLID(date, time)
-        entry += str(lid) + ',' + s[0] + ',' + getScientific(s[0]) + ',' + str(getTaxon(s[0])) + ',' + str(s[1]) + ',' + stprov + ',' + country + ',' + county + ',' + location + ',' + str(latitude) + ',' + str(longitude) + ',' + date + ',' + time + ',' + protocol + ',' + str(duration) + ',' + str(effort) + ',' + str(distance) + ',' + str(observers) + ',' + s[2] + ',' + comments + ',U'
+        entry += str(lid) + ',' + s[0] + ',' + getScientific(s[0]) + ',' + str(getTaxon(s[0])) + ',' + str(s[1]) + ',' + stprov + ',' + country + ',' + county + ',' + location + ',' + str(latitude) + ',' + str(longitude) + ',' + date + ',' + time + ',' + protocol + ',' + str(duration) + ',' + str(effort) + ',' + str(distance) + ',' + str(observers) + ',' + s[2] + ',' + comments + ',U\n'
     print(entry)
