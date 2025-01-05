@@ -46,7 +46,7 @@
 #   check user entered species against ebird taxonomy
 
 import click
-
+import Levenshtein
 
 @click.group()
 def cli():
@@ -125,7 +125,7 @@ def getScientific(common):
     for line in f:
         if split(line)[4] == common:
             return split(line)[5]
-    return "not found :("
+    return "error"
 
 def getTaxon(common):
     #gets taxon code
@@ -133,7 +133,28 @@ def getTaxon(common):
     for line in f:
         if split(line)[4] == common:
             return split(line)[0]
-    return "not found :("
+    return "error"
+
+def nearMiss(name):
+    #recieves a name not present in taxonomy and returns array of "near miss names"
+    arr = []
+    f = open("eBird_taxonomy.csv")
+    for line in f:
+        dist = Levenshtein.distance(name, split(line)[4])
+        print("comp is " + split(line)[4])
+        print("Dist is " + str(dist))
+        if dist < 3:
+            arr.append(split(line)[4])
+        if split(line)[4].find(name) != -1: #if name exists in line
+            arr.append(split(line)[4])
+    f = open("eBird_taxonomy.csv")
+    narr = arr.copy()
+    for line in f:
+        for n in narr:
+            if split(line)[4].find(n) != -1:
+                arr.append(split(line)[4])
+    return arr
+
 #species
 @cli.command()
 @click.argument("species", type=str)
@@ -359,6 +380,7 @@ def create():
     protocol = click.prompt("Protocol", type=click.Choice(["Traveling", "Stationary", "Casual"]), show_choices=True)
     date = click.prompt("Date (yyyy-mm-dd)")
     time = click.prompt("Time")
+    #calculate LID here, and it is already present ask them if they'd like to edit that checklist instead
     observers = click.prompt("Party size", type=int)
     location = click.prompt("Location")
     if location.find(',') != -1:
@@ -380,8 +402,8 @@ def create():
     if comments.find(',') != -1:
         comments = '"' + comments + '"'
     country = click.prompt("Country", default="", show_default=False)
-    county = click.prompt("County", default="", show_default=False)
     stprov = click.prompt("State/province", default="", show_default=False)
+    county = click.prompt("County", default="", show_default=False)
     latitude = click.prompt("Latitude", default="", show_default=False)
     longitude = click.prompt("Longitude", default="", show_default=False)
     species = []
@@ -397,9 +419,13 @@ def create():
                 if c.find(',') != -1:
                     c = '"' + c + '"'
             species.append([s, n, c])
+            print(nearMiss(s))
     print(species)
+    #near miss method --> if common name is not found, looks for names that are one letter off or contain part of that name
+    scientific = getScientific(s[0])
+    taxon = str(getTaxon(s[0]))
     entry = ""
     for s in species:
         lid = generateLID(date, time)
-        entry += str(lid) + ',' + s[0] + ',' + getScientific(s[0]) + ',' + str(getTaxon(s[0])) + ',' + str(s[1]) + ',' + stprov + ',' + country + ',' + county + ',' + location + ',' + str(latitude) + ',' + str(longitude) + ',' + date + ',' + time + ',' + protocol + ',' + str(duration) + ',' + str(effort) + ',' + str(distance) + ',' + str(observers) + ',' + s[2] + ',' + comments + ',U\n'
+        entry += str(lid) + ',' + s[0] + ',' + scientific + ',' + taxon + ',' + str(s[1]) + ',' + stprov + ',' + country + ',' + county + ',' + location + ',' + str(latitude) + ',' + str(longitude) + ',' + date + ',' + time + ',' + protocol + ',' + str(duration) + ',' + str(effort) + ',' + str(distance) + ',' + str(observers) + ',' + s[2] + ',' + comments + ',U\n'
     print(entry)
