@@ -135,24 +135,25 @@ def getTaxon(common):
             return split(line)[0]
     return "error"
 
-def nearMiss(name):
-    #recieves a name not present in taxonomy and returns array of "near miss names"
+def getSpecies(name):
+    #recieves a species name and returns a name present in taxonomy, or it returns a list of "near miss" names if none are found
     arr = []
+    name = str(name).lower()
     f = open("eBird_taxonomy.csv")
     for line in f:
-        dist = Levenshtein.distance(name, split(line)[4])
-        print("comp is " + split(line)[4])
-        print("Dist is " + str(dist))
-        if dist < 3:
-            arr.append(split(line)[4])
-        if split(line)[4].find(name) != -1: #if name exists in line
-            arr.append(split(line)[4])
-    f = open("eBird_taxonomy.csv")
-    narr = arr.copy()
-    for line in f:
-        for n in narr:
-            if split(line)[4].find(n) != -1:
-                arr.append(split(line)[4])
+        common = split(line)[4]
+        if str(common).lower() == name:
+            return [common]
+        else:
+            dist = Levenshtein.distance(name, str(common).lower())
+            if dist < 3:
+                arr.append(common)
+            i = 0
+            while i < len(common) - len(name):
+                dist = Levenshtein.distance(name, str(common).lower()[i:i + len(name) + 1])
+                if dist < 3 and indexOf(arr, common) == -1:
+                    arr.append(common)
+                i += 1
     return arr
 
 #species
@@ -412,6 +413,20 @@ def create():
     while not(s == "stop"):
         s = click.prompt("Enter species")
         if not(s == "stop"):
+            slist = getSpecies(s)
+            if len(slist) == 1:
+                s = slist[0]  
+            else:
+                while len(slist) > 1 or len(slist) == 0:
+                    if len(slist) > 1:
+                        click.echo("You've entered a species that's not in the eBird taxonomy. Did you mean to enter one of these species instead?")
+                        for l in slist:
+                            click.echo(l)
+                    else:
+                        click.echo("You've entered a species that's not in the eBird taxonomy.")
+                    s = click.prompt("Enter species")
+                    slist = getSpecies(s)
+                s = slist[0]
             n = click.prompt("How many")
             c = ""
             if click.prompt("Add comments (y/n)", type=click.Choice(["y", "n"]), show_choices=False) == "y":
@@ -419,13 +434,10 @@ def create():
                 if c.find(',') != -1:
                     c = '"' + c + '"'
             species.append([s, n, c])
-            print(nearMiss(s))
-    print(species)
-    #near miss method --> if common name is not found, looks for names that are one letter off or contain part of that name
-    scientific = getScientific(s[0])
-    taxon = str(getTaxon(s[0]))
     entry = ""
     for s in species:
+        scientific = getScientific(s[0])
+        taxon = str(getTaxon(s[0]))
         lid = generateLID(date, time)
         entry += str(lid) + ',' + s[0] + ',' + scientific + ',' + taxon + ',' + str(s[1]) + ',' + stprov + ',' + country + ',' + county + ',' + location + ',' + str(latitude) + ',' + str(longitude) + ',' + date + ',' + time + ',' + protocol + ',' + str(duration) + ',' + str(effort) + ',' + str(distance) + ',' + str(observers) + ',' + s[2] + ',' + comments + ',U\n'
     print(entry)
