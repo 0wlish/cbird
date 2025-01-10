@@ -34,7 +34,7 @@
 #cbird export
 #creates csv file of all data that is not already in ebird
 
-#cbird add
+#cbird create
 #adds a checklist from user prompting to local csv, marks what is added as not in ebird
 
 #some sort of way to store photos associated with a checklist
@@ -47,6 +47,7 @@
 
 import click
 import Levenshtein
+import datetime
 
 @click.group()
 def cli():
@@ -362,82 +363,148 @@ def Import(filepath):
                     str += d
                 str = str.replace("\n", "")
                 w.write(str + "\n")
+        f.close()
    
 
 #export
 @cli.command()
-def export():
-    """Export data from this program to eBird."""
+@click.option("-a", "--all", is_flag = True, help="Export all data")
+def export(all):
+    """Export data from this program to eBird Record Format."""
+    f = open("data.csv")
+    exportlist = []
+    filelist = []
+    for line in f:
+        data = split(line)
+        if data[20][0:1] == "U":
+            exportlist.append(data)
+        filelist.append(line[:-1] + "T")
+    f.close()
+    print(exportlist)
+    exportfile = open(exportlist[0][0] + ".csv", "a") #filename is LID of first checklist
+    for data in exportlist:
+        ef = ""
+        if data[15] == "0":
+            ef = "N"
+        else:
+            ef = "Y"
+        exportfile.write(data[1] + ',,,' + data[4] + ',' + data[18] + ',' + data[8] + ',' + data[9] + ',' + data[10] + ',' + data[11] + ',' + data[12] + ',' + data[5] + ',' + data[6] + ',' + data[13] + ',' + data[17] + ',' + data[14] + ',' + ef + ',' + data[16] + ',,' + data[19] + ',')
 
 #create
 @cli.command()
 def create():
     """Create a new checklist."""
-    #required: protocol, date, time, effort, num birdwatchers
-    #required if stationary or traveling: duration
-    #required if traveling: distance
-    #optional: lat, long
+    click.echo("* = required question")
+    date = click.prompt("*Date (yyyy-mm-dd)")
+    time = click.prompt("*Start time")
+    lid = generateLID(date, time)
+    isNew = True
+    f = open("data.csv")
+    for line in f:
+        data = split(line)
+        if data[0] == lid:
+            isNew = False
+    f.close()
 
-    protocol = click.prompt("Protocol", type=click.Choice(["Traveling", "Stationary", "Casual"]), show_choices=True)
-    date = click.prompt("Date (yyyy-mm-dd)")
-    time = click.prompt("Time")
-    #calculate LID here, and it is already present ask them if they'd like to edit that checklist instead
-    observers = click.prompt("Party size", type=int)
-    location = click.prompt("Location")
-    if location.find(',') != -1:
-        location = '"' + location + '"'
-    duration = ""
-    effort = ""
-    distance = ""
-    if not(protocol == "Casual"):
-        duration = click.prompt("Duration (min)")
-        if click.prompt("All species reported (y/n)", type=click.Choice(["y", "n"]), show_choices=False) == "y":
-            effort = "1"
-        else:
-            effort = "0"
-        if protocol == "Traveling":
-            distance = click.prompt("Distance traveled")
-    else: #if it is casual
-        effort = "0"
-    comments = click.prompt("Checklist comments", default="", show_default=False)
-    if comments.find(',') != -1:
-        comments = '"' + comments + '"'
-    country = click.prompt("Country", default="", show_default=False)
-    stprov = click.prompt("State/province", default="", show_default=False)
-    county = click.prompt("County", default="", show_default=False)
-    latitude = click.prompt("Latitude", default="", show_default=False)
-    longitude = click.prompt("Longitude", default="", show_default=False)
-    species = []
-    s = ""
-    click.echo("Enter species and how many. One species at a time. Type \"stop\" when you are finished.")
-    while not(s == "stop"):
-        s = click.prompt("Enter species")
-        if not(s == "stop"):
-            slist = getSpecies(s)
-            if len(slist) == 1:
-                s = slist[0]  
+    if isNew:
+        protocol = click.prompt("*Protocol", type=click.Choice(["Traveling", "Stationary", "Casual"]), show_choices=True)
+        if not(protocol == "Casual"):
+            duration = click.prompt("*Duration (min)")
+            if click.prompt("*All species reported (y/n)", type=click.Choice(["y", "n"]), show_choices=False) == "y":
+                effort = "1"
             else:
-                while len(slist) > 1 or len(slist) == 0:
-                    if len(slist) > 1:
-                        click.echo("You've entered a species that's not in the eBird taxonomy. Did you mean to enter one of these species instead?")
-                        for l in slist:
-                            click.echo(l)
-                    else:
-                        click.echo("You've entered a species that's not in the eBird taxonomy.")
-                    s = click.prompt("Enter species")
-                    slist = getSpecies(s)
-                s = slist[0]
-            n = click.prompt("How many")
-            c = ""
-            if click.prompt("Add comments (y/n)", type=click.Choice(["y", "n"]), show_choices=False) == "y":
-                c = click.prompt("Comments")
+                effort = "0"
+            if protocol == "Traveling":
+                distance = click.prompt("*Distance traveled (mi)")
+        else: #if it is casual
+            effort = "0"
+        observers = click.prompt("*Party size", type=int)
+        location = click.prompt("*Location")
+        if location.find(',') != -1:
+            location = '"' + location + '"'
+        duration = ""
+        effort = ""
+        distance = ""
+        country = click.prompt(" Country", default="", show_default=False)
+        stprov = click.prompt(" State/province", default="", show_default=False)
+        county = click.prompt(" County", default="", show_default=False)
+        latitude = click.prompt(" Latitude", default="", show_default=False)
+        longitude = click.prompt(" Longitude", default="", show_default=False)
+        comments = click.prompt(" Checklist comments", default="", show_default=False)
+        if comments.find(',') != -1:
+            comments = '"' + comments + '"'
+        species = []
+        s = ""
+        click.echo("Enter species and how many. One species at a time. Type \"stop\" when you are finished.")
+        while not(s == "stop"):
+            s = click.prompt("*Enter species")
+            if not(s == "stop"):
+                slist = getSpecies(s)
+                if len(slist) == 1:
+                    s = slist[0]  
+                else:
+                    while len(slist) > 1 or len(slist) == 0:
+                        if len(slist) > 1:
+                            click.echo("You've entered a species that's not in the eBird taxonomy. Did you mean to enter one of these species instead?")
+                            for l in slist:
+                                click.echo(l)
+                        else:
+                            click.echo("You've entered a species that's not in the eBird taxonomy.")
+                        s = click.prompt("Enter species")
+                        slist = getSpecies(s)
+                    s = slist[0]
+                n = click.prompt("*How many")
+                c = click.prompt(" Comments")
                 if c.find(',') != -1:
                     c = '"' + c + '"'
-            species.append([s, n, c])
-    entry = ""
-    for s in species:
-        scientific = getScientific(s[0])
-        taxon = str(getTaxon(s[0]))
-        lid = generateLID(date, time)
-        entry += str(lid) + ',' + s[0] + ',' + scientific + ',' + taxon + ',' + str(s[1]) + ',' + stprov + ',' + country + ',' + county + ',' + location + ',' + str(latitude) + ',' + str(longitude) + ',' + date + ',' + time + ',' + protocol + ',' + str(duration) + ',' + str(effort) + ',' + str(distance) + ',' + str(observers) + ',' + s[2] + ',' + comments + ',U\n'
-    print(entry)
+                species.append([s, n, c])
+        entry = ""
+        for s in species:
+            scientific = getScientific(s[0])
+            taxon = str(getTaxon(s[0]))
+            entry += str(lid) + ',' + s[0] + ',' + scientific + ',' + taxon + ',' + str(s[1]) + ',' + stprov + ',' + country + ',' + county + ',' + location + ',' + str(latitude) + ',' + str(longitude) + ',' + date + ',' + time + ',' + protocol + ',' + str(duration) + ',' + str(effort) + ',' + str(distance) + ',' + str(observers) + ',' + s[2] + ',' + comments + ',U\n'
+        print(entry)
+        f = open("data.csv", "a")
+        f.write(entry)
+        f.close()
+    else:
+        click.echo("A checklist already exists at that date and time. Use \"cbird edit\" command to edit it.")
+
+#edit
+@cli.command()
+def edit():
+    """Edit a checklist."""
+    click.echo("* = required question")
+    date = click.prompt("*Date (yyyy-mm-dd)")
+    time = click.prompt("*Start time")
+    lid = generateLID(date, time)
+    isNew = True
+    f = open("data.csv")
+    for line in f:
+        data = split(line)
+        if data[0] == lid:
+            isNew = False
+    f.close()
+    if not(isNew):
+        checklist = []
+        f = open("data.csv")
+        for line in f:
+            data = split(line)
+            if data[0] == lid:
+                checklist.append(data)
+        checklist.sort(key = byTaxon)
+        str = '\nLocation: ' + checklist[0][8] + '\n'
+        if checklist[0][13] == "Traveling":
+            str += 'Distance: ' + checklist[0][16] + ' mi\n'
+        if checklist[0][17] == 1:
+            str += "Complete Checklist\n"
+        else:
+            str += "Incomplete Checklist\n"
+        for data in checklist:
+            str += '\t' + data[4] + ' ' + data[1] + '\n'
+        click.echo(str)
+        if click.prompt("Are you sure that you want to edit this checklist? (y/n)", type=click.Choice(["y", "n"]), show_choices=False) == "y":
+            click.echo("edit something")
+    else:
+        click.echo("A checklist does not exist at that date and time. Use \"cbird create\" to create a new checklist.")
+

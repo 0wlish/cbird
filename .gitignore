@@ -3,3 +3,4 @@ cbird.egg-info/
 __pycache__/
 /data.csv
 /MyEBirdData.csv
+exports/
