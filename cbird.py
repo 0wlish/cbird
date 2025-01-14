@@ -157,6 +157,34 @@ def getSpecies(name):
                 i += 1
     return arr
 
+def isValidTime(time):
+    #recieves 24-h time and determines if it is a valid value
+    if not(str(time).find(":") == -1):
+        hour = int(str(time).split(":")[0])
+        minute = int(str(time).split(":")[0])
+        if hour > 24 or hour < 0:
+            return False
+        elif hour == 24:
+            if minute != 0:
+                return False
+            else:
+                return True
+        else:
+            if minute > 59 or minute < 0:
+                return False
+            else:
+                return True
+    else:
+        return False
+
+def to12HourTime(time):
+    #converts a time to 12-hour, does NOT check if it is valid
+    if str(time).lower().find("AM") != -1 or str(time).lower().find("PM") != -1:
+        if str(time[-2:]).lower() == "pm":
+            time = time[:-3]
+            hour = int(str(time).split(":")[0])
+            minute = str(time).split(":")[1]
+            hour += 12
 #species
 @cli.command()
 @click.argument("species", type=str)
@@ -374,21 +402,27 @@ def export(all):
     f = open("data.csv")
     exportlist = []
     filelist = []
+    lifelist = ""
     for line in f:
         data = split(line)
         if data[20][0:1] == "U":
             exportlist.append(data)
         filelist.append(line[:-1] + "T")
+        lifelist += line[:-2] + "T\n"
     f.close()
     print(exportlist)
-    exportfile = open(exportlist[0][0] + ".csv", "a") #filename is LID of first checklist
+    exportfile = open(exportlist[0][0] + ".csv", "w") #filename is LID of first checklist
     for data in exportlist:
         ef = ""
         if data[15] == "0":
             ef = "N"
         else:
             ef = "Y"
-        exportfile.write(data[1] + ',,,' + data[4] + ',' + data[18] + ',' + data[8] + ',' + data[9] + ',' + data[10] + ',' + data[11] + ',' + data[12] + ',' + data[5] + ',' + data[6] + ',' + data[13] + ',' + data[17] + ',' + data[14] + ',' + ef + ',' + data[16] + ',,' + data[19] + ',')
+        date = data[11].split("-")[1] + "/" + data[11].split("-")[2] + "/" + data[11].split("-")[0]
+        exportfile.write(data[1] + ',,,' + data[4] + ',' + data[18] + ',' + data[8] + ',' + data[9] + ',' + data[10] + ',' + date + ',' + data[12] + ',' + data[5] + ',' + data[6] + ',' + data[13] + ',' + data[17] + ',' + data[14] + ',' + ef + ',' + data[16] + ',,' + data[19] + ',\n')
+    f = open("data.csv", "w")
+    f.write(lifelist)
+    f.close()
 
 #create
 @cli.command()

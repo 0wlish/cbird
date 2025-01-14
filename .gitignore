@@ -4,3 +4,4 @@ __pycache__/
 /data.csv
 /MyEBirdData.csv
 exports/
+/.DS_Store
