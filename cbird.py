@@ -185,6 +185,12 @@ def to12HourTime(time):
             hour = int(str(time).split(":")[0])
             minute = str(time).split(":")[1]
             hour += 12
+
+def addQuotes(s):
+    if not(str(s).find(",") == -1):
+        s = '"' + s + '"'
+    return s
+
 #species
 @cli.command()
 @click.argument("species", type=str)
@@ -332,7 +338,7 @@ def checklist(filter, location, date, notes, order):
                 str += 'Distance: ' + checklist[0][16] + ' mi\n'
             if date:
                 str += 'Time: ' + checklist[0][12] + '\nDuration: ' + checklist[0][14] + ' min\n'
-            if checklist[0][17] == 1:
+            if checklist[0][15] == "Y":
                 str += "Complete Checklist\n"
             else:
                 str += "Incomplete Checklist\n"
@@ -376,7 +382,12 @@ def Import(filepath):
                     p = "Stationary"
                 elif data[13] != "Historical":
                     p = "Other"
-                newdata = [lid + ',', data[1] + ',', data[2] + ',', data[3] + ',', data[4] + ',', state + ',', country + ',', data[6] + ',', data[8] + ',', data[9] + ',', data[10] + ',', data[11] + ',', data[12] + ',', p + ',', data[14] + ',', data[15] + ',', data[16] + ',', data[18] + ',']
+                complete = ""
+                if data[15] == "0":
+                    complete = "N"
+                else:
+                    complete = "Y"
+                newdata = [lid + ',', data[1] + ',', data[2] + ',', data[3] + ',', data[4] + ',', state + ',', country + ',', data[6] + ',', data[8] + ',', data[9] + ',', data[10] + ',', data[11] + ',', data[12] + ',', p + ',', data[14] + ',', complete + ',', data[16] + ',', data[18] + ',']
                 if len(data) > 20:
                     newdata.append(data[20] + ',')
                 else:
@@ -392,6 +403,7 @@ def Import(filepath):
                 str = str.replace("\n", "")
                 w.write(str + "\n")
         f.close()
+        click.echo("Data imported")
    
 
 #export
@@ -401,13 +413,11 @@ def export(all):
     """Export data from this program to eBird Record Format."""
     f = open("data.csv")
     exportlist = []
-    filelist = []
     lifelist = ""
     for line in f:
         data = split(line)
         if data[20][0:1] == "U":
             exportlist.append(data)
-        filelist.append(line[:-1] + "T")
         lifelist += line[:-2] + "T\n"
     f.close()
     print(exportlist)
@@ -445,13 +455,13 @@ def create():
         if not(protocol == "Casual"):
             duration = click.prompt("*Duration (min)")
             if click.prompt("*All species reported (y/n)", type=click.Choice(["y", "n"]), show_choices=False) == "y":
-                effort = "1"
+                effort = "Y"
             else:
-                effort = "0"
+                effort = "N"
             if protocol == "Traveling":
                 distance = click.prompt("*Distance traveled (mi)")
         else: #if it is casual
-            effort = "0"
+            effort = "N"
         observers = click.prompt("*Party size", type=int)
         location = click.prompt("*Location")
         if location.find(',') != -1:
@@ -484,11 +494,11 @@ def create():
                                 click.echo(l)
                         else:
                             click.echo("You've entered a species that's not in the eBird taxonomy.")
-                        s = click.prompt("Enter species")
+                        s = click.prompt("*Enter species")
                         slist = getSpecies(s)
                     s = slist[0]
                 n = click.prompt("*How many")
-                c = click.prompt(" Comments")
+                c = click.prompt(" Comments", default="", show_default=False)
                 if c.find(',') != -1:
                     c = '"' + c + '"'
                 species.append([s, n, c])
@@ -505,7 +515,7 @@ def create():
         click.echo("A checklist already exists at that date and time. Use \"cbird edit\" command to edit it.")
 
 #edit
-@cli.command()
+@cli.command() #rework to use vim/other default editor
 def edit():
     """Edit a checklist."""
     click.echo("* = required question")
@@ -521,24 +531,79 @@ def edit():
     f.close()
     if not(isNew):
         checklist = []
+        toWrite = [] #stores rows to write back to file
         f = open("data.csv")
         for line in f:
             data = split(line)
             if data[0] == lid:
                 checklist.append(data)
+            else:
+                toWrite.append(data)
         checklist.sort(key = byTaxon)
-        str = '\nLocation: ' + checklist[0][8] + '\n'
-        if checklist[0][13] == "Traveling":
-            str += 'Distance: ' + checklist[0][16] + ' mi\n'
-        if checklist[0][17] == 1:
-            str += "Complete Checklist\n"
-        else:
-            str += "Incomplete Checklist\n"
+        strP = '\nLocation: ' + checklist[0][8] + '\nCountry: ' + checklist[0][6] + '\nState/Province: ' + checklist[0][5] + '\nCounty: ' + checklist[0][7] + '\nLatitude: ' + checklist[0][9] + '\nLongitude: ' + checklist[0][10] + '\nDate: ' + checklist[0][11] + '\nProtocol: ' + checklist[0][13]
+        strP += '\nDistance (mi): ' + checklist[0][16]
+        strP += '\nTime: ' + checklist[0][12] + '\nDuration (min): ' + checklist[0][14]
+        strP += "\nComplete (Y/N): " + checklist[0][15] + "\n"
+        strP += 'Number of observers: ' +checklist[0][17] + '\nNotes: ' + checklist[0][19] + '\nSpecies:\n'
         for data in checklist:
-            str += '\t' + data[4] + ' ' + data[1] + '\n'
-        click.echo(str)
+            strP += '\t' + data[4] + ' ' + data[1] + '\n\t\tNotes: ' + data[18] + '\n'
+        strP = str(strP).replace('"', '')
+        click.echo(strP)
         if click.prompt("Are you sure that you want to edit this checklist? (y/n)", type=click.Choice(["y", "n"]), show_choices=False) == "y":
-            click.echo("edit something")
+            checklistStr = click.edit(strP)
+            checklistStr = str(checklistStr).replace("\t", "")
+            checklistArr = checklistStr.split("\n") #split edited string file into data, then check to make sure data (dates, names) are correct
+            location = addQuotes(checklistArr[1][10:]) #test what happens w/ no edits
+            country = checklistArr[2][9:]
+            stprov = checklistArr[3][16:]
+            county = checklistArr[4][8:]
+            lat = checklistArr[5][10:]
+            long = checklistArr[6][11:]
+            date = checklistArr[7][6:]
+            protocol = checklistArr[8][10:]
+            distance = checklistArr[9][15:]
+            time = checklistArr[10][6:]
+            duration = checklistArr[11][16:]
+            complete = checklistArr[12][16:]
+            observers = checklistArr[13][21:]
+            notes = addQuotes(checklistArr[14][7:])
+            species = checklistArr[16:]
+            #print(species)
+            i = 0
+            while i < (len(species) - 1):
+                num = species[i].split(maxsplit=1)[0]
+                name = species[i].split(maxsplit=1)[1]
+                snotes = addQuotes(species[i + 1][7:])
+                slist = getSpecies(name)
+                sname = ""
+                if len(slist) == 1:
+                    name = slist[0]  
+                else:
+                    while len(slist) > 1 or len(slist) == 0:
+                        if len(slist) > 1:
+                            click.echo("You've entered a species that's not in the eBird taxonomy. Did you mean to enter one of these species instead?")
+                            for l in slist:
+                                click.echo(l)
+                        else:
+                            click.echo("You've entered a species that's not in the eBird taxonomy. Please enter which species you meant.")
+                        sname = click.prompt("Species") #give option to enter an out-of-taxonomy species
+                        slist = getSpecies(sname)
+                    sname = slist[0]
+                taxon = getTaxon(name)
+                newData = [lid, name, sname, taxon, num, stprov, country, county, location, lat, long, date, time, protocol, duration, complete, distance, observers, snotes , notes, 'U\n']
+                #print(strW)
+                toWrite.append(newData)
+                i += 2
+            click.echo("Note: to see these changes reflected in eBird, you will need to delete the checklist on eBird then use \"cbird export\" to export and upload untracked data.")
+            toWrite.sort(key=byTaxon)
+            f = open("data.csv", "w")
+            for line in toWrite:
+                data = ""
+                for l in line:
+                    data += (l + ",")
+                data = data[:-1]
+                f.write(data)
+
     else:
         click.echo("A checklist does not exist at that date and time. Use \"cbird create\" to create a new checklist.")
 
