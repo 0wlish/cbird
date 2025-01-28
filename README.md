@@ -8,3 +8,6 @@
 \___/_.___/_/_/   \__._/   
 
 ```
+
+Install using
+```pip install --index-url https://test.pypi.org/project/cbird/0.0.1/```
