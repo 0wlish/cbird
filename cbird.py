@@ -42,6 +42,7 @@
 #   add regional stats, so you can see how many bird you've seen in a certain area
 #   user config file
 #   compare import w/ local to remove duplicates
+#   way to delete checklist
 
 import click
 import Levenshtein
@@ -116,6 +117,8 @@ def generateLID(date, time):
         time = int(time) + 1200
     elif time[-3:] == " AM":
         time = time[:-3]
+    if len(str(time)) == 3:
+        time = "0" + str(time)
     return date + str(time)
 
 def getScientific(common):
@@ -451,7 +454,7 @@ def create():
         data = split(line)
         if data[0] == lid:
             isNew = False
-        toWrite.append(line)
+        toWrite.append(data)
     f.close()
 
     if isNew:
@@ -503,7 +506,7 @@ def create():
         for s in species:
             scientific = getScientific(s[0])
             taxon = str(getTaxon(s[0]))
-            entry = [str(lid), s[0], scientific, taxon, str(s[1]), stprov, country, county, location, str(latitude), str(longitude), date, time, protocol, str(duration), str(effort), str(distance), str(observers), s[2], comments, ',U\n']
+            entry = [str(lid), s[0], scientific, taxon, str(s[1]), stprov, country, county, location, str(latitude), str(longitude), date, time, protocol, str(duration), str(effort), str(distance), str(observers), s[2], comments, 'U\n']
             toWrite.append(entry)
         toWrite.sort(key=byTaxon)
         f = open("data.csv", "w")
@@ -517,7 +520,7 @@ def create():
         click.echo("A checklist already exists at that date and time. Use \"cbird edit\" command to edit it.")
 
 #edit
-@cli.command() #rework to use vim/other default editor
+@cli.command()
 def edit():
     """Edit a checklist."""
     click.echo("* = required question")
@@ -588,9 +591,10 @@ def edit():
                                 click.echo(l)
                         else:
                             click.echo("You've entered a species that's not in the eBird taxonomy. Please enter which species you meant.")
-                        sname = click.prompt("Species") #give option to enter an out-of-taxonomy species
-                        slist = getSpecies(sname)
-                    sname = slist[0]
+                        name = click.prompt("Species") #give option to enter an out-of-taxonomy species
+                        slist = getSpecies(name)
+                    name = slist[0]
+                sname = getScientific(name)
                 taxon = getTaxon(name)
                 newData = [lid, name, sname, taxon, num, stprov, country, county, location, lat, long, date, time, protocol, duration, complete, distance, observers, snotes , notes, 'U\n']
                 #print(strW)
