@@ -14,7 +14,7 @@ setup(
     long_description = long_description,
     long_description_content_type = "text/markdown",
     url = 'https://github.com/0wlish/cbird',
-    py_modules = ['cbird', 'app'],
+    py_modules = ['cbird'],
     packages = find_packages(),
     install_requires = [requirements],
     python_requires='>=3.7',
