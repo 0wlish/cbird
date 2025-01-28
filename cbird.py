@@ -37,13 +37,11 @@
 #cbird create
 #adds a checklist from user prompting to local csv, marks what is added as not in ebird
 
-#some sort of way to store photos associated with a checklist
-
-#add regional stats, so you can see how many bird you've seen in a certain area
-
-#other features:
+#TO DO:
+#   some sort of way to store photos associated with a checklist
+#   add regional stats, so you can see how many bird you've seen in a certain area
 #   user config file
-#   check user entered species against ebird taxonomy
+#   compare import w/ local to remove duplicates
 
 import click
 import Levenshtein
@@ -206,16 +204,17 @@ def species(species, location, date, notes): #add additional filters? (ex: by da
         data = split(line)
         if data[1].lower() == species.lower():
             found = True
-            str = data[1] + '\nLocation: ' + data[8] + '\n'
+            strP = data[1] + '\nLocation: ' + data[8] + '\n'
             if location:
-                str += 'Country: ' + data[6] + '\nState/Province: ' + data[5] + '\nCounty: ' + data[7] + '\nLatitude: ' + data[9] + '\nLongitude: ' + data[10] + '\n'
-            str += 'Date: ' + data[11] + '\n'
+                strP += 'Country: ' + data[6] + '\nState/Province: ' + data[5] + '\nCounty: ' + data[7] + '\nLatitude: ' + data[9] + '\nLongitude: ' + data[10] + '\n'
+            strP += 'Date: ' + data[11] + '\n'
             if date:
-                str += 'Time: ' + data[12] + '\nDuration: ' + data[14] + ' min\n'
+                strP += 'Time: ' + data[12] + '\nDuration: ' + data[14] + ' min\n'
             if notes:
                 if data[18] != "":
-                    str += 'Notes: ' + data[18] + '\n'
-            click.echo(str)
+                    strP += 'Notes: ' + data[18] + '\n'
+            strP = str(strP).replace('"','')
+            click.echo(strP)
     if not(found):
         click.echo("Species not found")
     f.close()
@@ -231,7 +230,6 @@ def species(species, location, date, notes): #add additional filters? (ex: by da
 def lifelist(location, date, notes, last, order, additional):
     """Prints life list sorted by date. Oldest sightings first, sorted by first seen"""
     f = open("data.csv")
-    species = ""
     lifelist = [] #array of species arrays of data arrays
     additionals = [] #spuh/slash list
     list = []
@@ -258,29 +256,31 @@ def lifelist(location, date, notes, last, order, additional):
                 additionals.append(specieslist[0])
     lifelist.sort(key = byDate, reverse = order)
     for data in lifelist:
-        str = data[1] + '\nLocation: ' + data[8] + '\n'
+        strP = data[1] + '\nLocation: ' + data[8] + '\n'
         if location:
-            str += 'Country: ' + data[6] + '\nState/Province: ' + data[5] + '\nCounty: ' + data[7] + '\nLatitude: ' + data[9] + '\nLongitude: ' + data[10] + '\n'
-        str += 'Date: ' + data[11] + '\n'
+            strP += 'Country: ' + data[6] + '\nState/Province: ' + data[5] + '\nCounty: ' + data[7] + '\nLatitude: ' + data[9] + '\nLongitude: ' + data[10] + '\n'
+        strP += 'Date: ' + data[11] + '\n'
         if date:
-            str += 'Time: ' + data[12] + '\nDuration: ' + data[14] + ' min\n'
+            strP += 'Time: ' + data[12] + '\nDuration: ' + data[14] + ' min\n'
         if notes:
             if data[18] != "":
-                str += 'Notes: ' + data[18] + '\n'
-        click.echo(str)
+                strP += 'Notes: ' + data[18] + '\n'
+        strP = str(strP).replace('"', '')
+        click.echo(strP)
     if additional:
         click.echo("Additional taxa:\n")
         for data in additionals:
-            str = data[1] + '\nLocation: ' + data[8] + '\n'
+            strP = data[1] + '\nLocation: ' + data[8] + '\n'
             if location:
-                str += 'Country: ' + data[6] + '\nState/Province: ' + data[5] + '\nCounty: ' + data[7] + '\nLatitude: ' + data[9] + '\nLongitude: ' + data[10] + '\n'
-            str += 'Date: ' + data[11] + '\n'
+                strP += 'Country: ' + data[6] + '\nState/Province: ' + data[5] + '\nCounty: ' + data[7] + '\nLatitude: ' + data[9] + '\nLongitude: ' + data[10] + '\n'
+            strP += 'Date: ' + data[11] + '\n'
             if date:
-                str += 'Time: ' + data[12] + '\nDuration: ' + data[14] + ' min\n'
+                strP += 'Time: ' + data[12] + '\nDuration: ' + data[14] + ' min\n'
             if notes:
                 if data[18] != "":
-                    str += 'Notes: ' + data[18] + '\n'
-            click.echo(str)
+                    strP += 'Notes: ' + data[18] + '\n'
+            strP = str(strP).replace('"', '')
+            click.echo(strP)
     f.close()
 
 #checklist
@@ -330,27 +330,28 @@ def checklist(filter, location, date, notes, order):
         checklists.sort(key = byDate, reverse = order)
         for checklist in checklists:
             checklist.sort(key = byTaxon)
-            str = 'Location: ' + checklist[0][8] + '\n'
+            strP = 'Location: ' + checklist[0][8] + '\n'
             if location:
-                str += 'Country: ' + checklist[0][6] + '\nState/Province: ' + checklist[0][5] + '\nCounty: ' + checklist[0][7] + '\nLatitude: ' + checklist[0][9] + '\nLongitude: ' + checklist[0][10] + '\n'
-            str += 'Date: ' + checklist[0][11] + '\nProtocol: ' + checklist[0][13] + '\n'
+                strP += 'Country: ' + checklist[0][6] + '\nState/Province: ' + checklist[0][5] + '\nCounty: ' + checklist[0][7] + '\nLatitude: ' + checklist[0][9] + '\nLongitude: ' + checklist[0][10] + '\n'
+            strP += 'Date: ' + checklist[0][11] + '\nProtocol: ' + checklist[0][13] + '\n'
             if checklist[0][13] == "Traveling":
-                str += 'Distance: ' + checklist[0][16] + ' mi\n'
+                strP += 'Distance: ' + checklist[0][16] + ' mi\n'
             if date:
-                str += 'Time: ' + checklist[0][12] + '\nDuration: ' + checklist[0][14] + ' min\n'
+                strP += 'Time: ' + checklist[0][12] + '\nDuration: ' + checklist[0][14] + ' min\n'
             if checklist[0][15] == "Y":
-                str += "Complete Checklist\n"
+                strP += "Complete Checklist\n"
             else:
-                str += "Incomplete Checklist\n"
+                strP += "Incomplete Checklist\n"
             if notes:
                 if checklist[0][19] != "":
-                    str += 'Notes: ' + checklist[0][19] + '\n'
+                    strP += 'Notes: ' + checklist[0][19] + '\n'
             for data in checklist:
-                str += '\t' + data[4] + ' ' + data[1] + '\n'
+                strP += '\t' + data[4] + ' ' + data[1] + '\n'
                 if notes:
                     if data[18] != "":
-                        str += '\t\tNotes: ' + data[18] + '\n'
-            click.echo(str)
+                        strP += '\t\tNotes: ' + data[18] + '\n'
+            strP = str(strP).replace('"', '')
+            click.echo(strP)
     else:
         click.echo("Nothing matches your filter.")
     f.close()
@@ -397,11 +398,11 @@ def Import(filepath):
                 else:
                     newdata.append(',')
                 newdata.append("T") #stands for Tracked, indicates that this entry is up-to-date w/ ebird
-                str = ""
+                strP = ""
                 for d in newdata:
-                    str += d
-                str = str.replace("\n", "")
-                w.write(str + "\n")
+                    strP += d
+                strP = strP.replace("\n", "")
+                w.write(strP + "\n")
         f.close()
         click.echo("Data imported")
    
@@ -433,6 +434,7 @@ def export(all):
     f = open("data.csv", "w")
     f.write(lifelist)
     f.close()
+    click.echo("Data exported to " + exportlist[0][0] + ".csv")
 
 #create
 @cli.command()
@@ -443,11 +445,13 @@ def create():
     time = click.prompt("*Start time")
     lid = generateLID(date, time)
     isNew = True
+    toWrite = []
     f = open("data.csv")
     for line in f:
         data = split(line)
         if data[0] == lid:
             isNew = False
+        toWrite.append(line)
     f.close()
 
     if isNew:
@@ -463,9 +467,7 @@ def create():
         else: #if it is casual
             effort = "N"
         observers = click.prompt("*Party size", type=int)
-        location = click.prompt("*Location")
-        if location.find(',') != -1:
-            location = '"' + location + '"'
+        location = addQuotes(click.prompt("*Location"))
         duration = ""
         effort = ""
         distance = ""
@@ -474,9 +476,7 @@ def create():
         county = click.prompt(" County", default="", show_default=False)
         latitude = click.prompt(" Latitude", default="", show_default=False)
         longitude = click.prompt(" Longitude", default="", show_default=False)
-        comments = click.prompt(" Checklist comments", default="", show_default=False)
-        if comments.find(',') != -1:
-            comments = '"' + comments + '"'
+        comments = addQuotes(click.prompt(" Checklist comments", default="", show_default=False))
         species = []
         s = ""
         click.echo("Enter species and how many. One species at a time. Type \"stop\" when you are finished.")
@@ -498,19 +498,21 @@ def create():
                         slist = getSpecies(s)
                     s = slist[0]
                 n = click.prompt("*How many")
-                c = click.prompt(" Comments", default="", show_default=False)
-                if c.find(',') != -1:
-                    c = '"' + c + '"'
+                c = addQuotes(click.prompt(" Comments", default="", show_default=False))
                 species.append([s, n, c])
-        entry = ""
         for s in species:
             scientific = getScientific(s[0])
             taxon = str(getTaxon(s[0]))
-            entry += str(lid) + ',' + s[0] + ',' + scientific + ',' + taxon + ',' + str(s[1]) + ',' + stprov + ',' + country + ',' + county + ',' + location + ',' + str(latitude) + ',' + str(longitude) + ',' + date + ',' + time + ',' + protocol + ',' + str(duration) + ',' + str(effort) + ',' + str(distance) + ',' + str(observers) + ',' + s[2] + ',' + comments + ',U\n'
-        print(entry)
-        f = open("data.csv", "a")
-        f.write(entry)
-        f.close()
+            entry = [str(lid), s[0], scientific, taxon, str(s[1]), stprov, country, county, location, str(latitude), str(longitude), date, time, protocol, str(duration), str(effort), str(distance), str(observers), s[2], comments, ',U\n']
+            toWrite.append(entry)
+        toWrite.sort(key=byTaxon)
+        f = open("data.csv", "w")
+        for line in toWrite:
+            data = ""
+            for l in line:
+                data += (l + ",")
+            data = data[:-1]
+            f.write(data)
     else:
         click.echo("A checklist already exists at that date and time. Use \"cbird edit\" command to edit it.")
 
