@@ -15,4 +15,4 @@ cbird is a CLI tool for birders to manage their birdwatching data locally. If yo
 
 DISCLAIMER: You need to import your data before doing anything!
 
-If you want a sample dataset to test it with, download one from [https://cloud-d08c1zfcg-hack-club-bot.vercel.app/0myebirddata.csv](https://cloud-d08c1zfcg-hack-club-bot.vercel.app/0myebirddata.csv)
+If you want a sample dataset to test it with, download one from [https://cloud-e2rxtx2vh-hack-club-bot.vercel.app/0myebirddata.csv](https://cloud-e2rxtx2vh-hack-club-bot.vercel.app/0myebirddata.csv)
