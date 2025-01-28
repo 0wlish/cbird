@@ -9,5 +9,4 @@
 
 ```
 
-Install using
-```pip install --index-url https://test.pypi.org/project/cbird/0.0.1/```
+Install using ```pip install -i https://test.pypi.org/simple/ cbird==0.0.1```
