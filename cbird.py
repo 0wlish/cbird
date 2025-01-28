@@ -424,7 +424,6 @@ def export(all):
             exportlist.append(data)
         lifelist += line[:-2] + "T\n"
     f.close()
-    print(exportlist)
     exportfile = open(exportlist[0][0] + ".csv", "w") #filename is LID of first checklist
     for data in exportlist:
         ef = ""
